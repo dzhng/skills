@@ -16,18 +16,24 @@ your own.
 ## Why these skills exist
 
 Software development is moving to **factories and loops**. The unit of work is no
-longer a single task an agent completes and hands back — it's a *goal* that gets
-broken into many smaller tasks and pursued autonomously, iterating without a
-human in the loop until everything is done and the output is good enough to
-trust.
+longer a single task an agent completes and hands back — it's a *goal* pursued
+autonomously, iterating without a human in the loop until it's done and the
+output is good enough to trust.
 
-That only works if each loop can judge its own output and keep going: implement a
-slice, verify it — including *visually*, against a baseline — decide whether it
-got less wrong or worse, and iterate until the result meets the goal. These
-skills are the discipline that makes those loops trustworthy. They let an agent
-break down any software product, build it slice by slice, visually verify the
-result, compare it against the target, and keep optimizing for *less wrong*
-until the final goal is met — not fire once and stop.
+The hard part isn't breaking a goal into tasks. It's breaking it into
+**independently verifiable pieces** — and knowing where the pieces even are. So
+the loop starts by getting a lay of the land, then treats everything it doesn't
+yet understand as **fog of war**: map the terrain, carve it into independent
+territories that can be built and checked in isolation, and keep scouting the
+edges — recursively re-slicing any territory that turns out to hide more map —
+until the whole thing is uncovered.
+
+Then every piece has to *prove itself* before the loop moves on. Not a green
+test — it has to survive **architecture review, code review, and visual / image
+review against a baseline**. Each verified piece narrows the fog; each iteration
+optimizes for *less wrong*. Run that recursively and a goal too big to hold in
+one context gets built, checked, and trusted one independent territory at a time
+— until the final goal is done. These skills are that discipline.
 
 ![A single autonomous run — 1 day, 16 hours pursuing one goal](assets/autonomous-run.png)
 
