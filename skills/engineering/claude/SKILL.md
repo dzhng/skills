@@ -35,9 +35,9 @@ the artifact you need. A sharper contract beats higher effort.
 
 - **One task per run.** Split review, implementation, and docs into separate
   prompts.
-- **Name our repo skills when relevant.** Claude can read repo files; say
-  "follow write-tests", "use tweak-mechanics", or "match the aesthetics north
-  star" instead of pasting those skills into the prompt.
+- **Name repo skills when relevant.** Claude can read repo files; say "follow
+  write-docs for the doc" or "obey refactor-clean: no compatibility wrappers"
+  instead of pasting those skills into the prompt.
 - **Blocks, added only where useful:**
   - `<task>` — the concrete job, context, and expected end state.
   - `<output_contract>` — exact response shape, highest-value first.
@@ -76,8 +76,8 @@ without a fresh ask.
    An underspecified task stays with you until a fresh agent could not misread
    it.
 2. Start from a clean tree or record the baseline commit so Claude's diff is
-   separable from yours. Tell Claude to write scratch files to the repo's
-   gitignored `/throwaway/` folder.
+   separable from yours. Tell Claude to keep scratch files (probes, dumps,
+   notes) out of the tree — its diff must contain only the deliverable.
 3. Choose permissions by what the task must do:
    - Read/review: `--tools "Read,Grep,Glob,Bash" --permission-mode dontAsk`.
    - Narrow edits: add edit tools and keep the prompt's allowed paths explicit.

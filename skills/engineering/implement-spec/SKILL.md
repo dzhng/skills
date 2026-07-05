@@ -1,6 +1,6 @@
 ---
 name: implement-spec
-description: Implement an existing spec. Use when the user says implement spec.
+description: Implement an existing spec through committed passes. Use for long or multi-pass specs that need maintenance checkpoints to periodically clean code, handoffs, priorities, and plan bloat before drift accumulates.
 ---
 
 # Implement Spec
@@ -37,24 +37,49 @@ depends on prior work.
    screenshots so the subject is framed and readable, not merely nonblank.
    Never weaken an existing default gate or repin a failing contract without
    proving the old contract is wrong.
-5. Run [refactor-clean](../refactor-clean/SKILL.md) at the end of every pass,
+5. **Review the change list and clean up after every pass, before committing.**
+   Read `git status`/`git diff --stat` line by line and account for every path:
+   one-off probes, shot scripts, scratch files, `nohup.out`, ad-hoc screenshot
+   dirs, and SPIKE/debug notes never enter a commit — scratch stays out of the
+   tree; review evidence belongs in the spec's `assets/`; anything else gets
+   deleted. A file you can't name the durable purpose of does not ship.
+   Delegated agents leak these; the integrating reviewer re-checks the merged
+   tree with the same eye.
+6. Run [refactor-clean](../refactor-clean/SKILL.md) at the end of every pass,
    before reviewing: collapse any sediment this pass introduced — dev-only shims,
    duplicated concepts, parallel abstractions, compatibility wrappers — into the
    clean contract with one owner, so the code reads as designed today, not tacked
    on. Then run a code-review pass. Apply the fixes from both, rerun the
    affected checks, then commit only the focused changes from this pass.
-6. Update the spec README's "Next Agent Prompt": status, completed work, next
+7. Update the spec README's "Next Agent Prompt": status, completed work, next
    pickup point, blockers, changed gates, and any architecture decision that
    changed the plan.
-7. Run a **spec hygiene pass** whenever the plan has churned: after a red visual
-   pass, after a rebase that changes owners, after two or three slice commits,
-   when the handoff contradicts the TODO/graph, or when the active prompt grows
-   hard to scan. Prune stale blow-by-blow history into a compact archive,
-   correct completed/rejected/next markers, name the one active pickup, and
-   reslice any bloated slice before more code. The completion criterion is that a
-   fresh agent can read the opening handoff, TODO, and slice graph and choose the
-   same next action.
-8. **Continue.** If any slice or global TODO is still open, go straight back to
+8. Run a **maintenance checkpoint** as part of the loop, not as endgame cleanup.
+   Trigger it after a red pass, after every two or three slice commits, after a
+   rebase/resume/compaction, before changing feature areas, when evidence
+   invalidates the plan, when the handoff contradicts the TODO/graph, or when the
+   active prompt grows hard to scan. Long specs bloat repeatedly; cleanup is a
+   normal pass, not a cosmetic chore.
+
+   A checkpoint cleans both plan and code before more feature work:
+   - Shorten the README handoff to one current pickup, one priority order, and
+     one compact evidence ledger; move play-by-play into slice files or assets.
+   - Correct completed/rejected/next markers; delete stale TODOs, stale
+     acceptance claims, duplicated status sections, and obsolete prompts.
+   - Re-rank remaining work so the next red/high-risk contract is explicit, and
+     demote branches that are not on that path.
+   - Reslice any still-red, overloaded, or foggy slice into smaller independently
+     verifiable passes before implementing past it.
+   - Delete or collapse scaffolding from earlier passes when it no longer owns a
+     real contract.
+   - If the work feels off-track, ask a fresh review/subagent to audit spec shape
+     and priority order, then apply the fixes.
+
+   Commit the checkpoint as its own focused pass when cleanup changes the spec,
+   code shape, or handoff enough that future agents would otherwise inherit stale
+   context. It is done only when a fresh agent can read the README handoff, TODO,
+   and slice graph and choose the same next action without conversation history.
+9. **Continue.** If any slice or global TODO is still open, go straight back to
    step 1 for the next one — same session, no pause for acknowledgement. Keep
    looping until every TODO is closed. When the last slice lands, close the spec
    with [close-spec](../close-spec/SKILL.md).
@@ -96,9 +121,10 @@ depends on prior work.
 - When the implementation touches shared behavior, leave docs or spec rationale
   using [write-docs](../write-docs/SKILL.md) principles: durable invariants and
   pointers, not copied inventories.
-- For long specs, keep the spec itself reviewable. Do not let the README become
-  a transcript of every failed attempt; keep one current handoff, one TODO/graph,
-  and one compact evidence ledger, with details in slice files or assets.
+- For long specs, keep the spec itself reviewable as an invariant. Do not let
+  the README become a transcript of every attempt; keep one current handoff, one
+  TODO/graph, and one compact evidence ledger, with details in slice files or
+  assets.
 - **Human checkpoints never block.** At a slice's review or sign-off gate, open
   the relevant shots with [preview-shots](../../visual/preview-shots/SKILL.md),
   state the decision and the options, and give the user ~5 minutes to weigh in —

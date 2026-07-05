@@ -37,10 +37,33 @@ it is moving ownership until there is one concept with clear consumers.
   faithfully rebuild the old interfaces on a new foundation.
 - Prefer one shared primitive over N adapters. An adapter is acceptable only at an
   external boundary or as a short-lived migration seam.
+- **Know what already exists before you build something new.** Before writing a
+  new mechanism — a shape, computation, asset, state machine, data contract —
+  search the codebase for one that already does this, or something close enough
+  to share. Only once you know what's there can you make the real decision:
+  reuse it, consolidate two near-duplicates, or extract the shared core into an
+  independent module both call — and that decision belongs *before* you start,
+  not bolted on after. Reuse is not automatically the answer; the existing thing
+  may be wrong, or genuinely different, and then you build new deliberately. The
+  failure this prevents is building in ignorance of what's already there: two
+  implementations that must agree then silently drift, each re-deriving details
+  the other already settled (orientation, units, edge cases, ordering).
 - Do not preserve dev-only compatibility by default. Unshipped scaffolding should
   move to the clean contract immediately.
 - Make ownership visible in stats, tests, or debug output when divergence was the
   bug class.
+- **A check that RE-DERIVES a value the code already computes will drift from
+  it.** A test or second consumer that recomputes geometry, state, or a derived
+  quantity independently can disagree with the code over a difference invisible
+  on paper — an operation-order or rounding subtlety — and fire false verdicts.
+  Export the owner's computed value and have the check consume that, so it
+  enforces exactly what the code produced: one owner for the computation, not two
+  that happen to mostly agree.
+- **A symmetric or featureless placeholder can hide an orientation or coordinate
+  bug in the thing it stands in for.** A symmetric stand-in renders the same
+  whether or not the coordinate frame is flipped, so the defect stays invisible
+  until a real asymmetric asset exposes it. When you swap a placeholder for the
+  real asset, re-verify orientation and framing, not just that it renders.
 - Update the spec or handoff with the new invariant, not the mechanical file list.
 - If the refactor starts widening into unrelated behavior, slice it: land the shared
   contract first, then port consumers in reviewable passes.

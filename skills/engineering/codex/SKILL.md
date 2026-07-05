@@ -120,6 +120,10 @@ changes. "Process running" is NOT "working."
   bypass flags stay forbidden here.
 - **Don't launch two execs in the same instant,** and kill stale hung execs
   before starting a new one.
+- **Launch from the repo/worktree ROOT.** The writable sandbox root is the
+  CWD at launch: exec'd from a subdirectory (e.g. `web/`), every edit outside
+  it is rejected as "writing outside of the project" and a `never` approval
+  policy can't recover — the run burns with zero files changed.
 - **Long prompts via file:** `codex exec ... "$(cat prompt.txt)"` — check the
   file exists first; a missing file silently sends the fallback string as the
   task.
