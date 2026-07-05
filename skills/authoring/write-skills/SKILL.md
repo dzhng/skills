@@ -25,7 +25,11 @@ will do.
 
 3. **Write procedures, not essays.** Prefer imperative rules, decision
    points, and small examples. A good skill changes behavior in the next
-   turn; it does not merely explain the topic.
+   turn; it does not merely explain the topic. And match the procedure to
+   the deliverable's shape: a catalog of techniques with "pick what fits"
+   produces tool-picking, not a flow — if the job is a shaped interaction
+   (an interview, a staged walk), the workflow must *be* that shape, with
+   the techniques demoted to steps inside it.
 
 4. **Use progressive disclosure.** Keep the main skill file short. Push long
    schemas, examples, provider docs, or variant-specific guidance out into
@@ -34,8 +38,11 @@ will do.
    output material in `assets/`.
 
 5. **Validate by use.** A skill is good when a fresh agent applies it
-   correctly on a realistic task. After editing, read it as if you had no
-   conversation history and remove anything that would not affect action.
+   correctly on a realistic task — run it blind, and on the weakest model
+   that will run it; a skill that only drives correct behavior on the
+   frontier model that authored it is too fragile to ship. After editing,
+   read it as if you had no conversation history and remove anything that
+   would not affect action.
 
 6. **Examples document the PROBLEM, not the solution.** An example earns its
    tokens by teaching the agent to *recognise a recurring problem* — the smell,
@@ -117,7 +124,10 @@ Each cut spends a cost, so split only when it earns it:
   pay context load for the new always-loaded description.
 - **By sequence** — split a run of steps when the steps still ahead tempt
   the agent to rush the one in front of it. Hiding later steps forces more
-  work on the current one.
+  work on the current one. The tell is **stage compression**: several steps'
+  work lands in one message, or the agent narrates a later step as complete
+  without ever having opened it. A "when you enter a step, read its file"
+  pointer in the main skill fires reliably, even on weaker models.
 
 ## Failure Modes
 
@@ -125,7 +135,19 @@ Diagnose a misbehaving skill against these:
 
 - **Premature completion** — ending a step before it's done. Fix the
   completion criterion first (cheap); only split to hide later steps if the
-  criterion is irreducibly fuzzy *and* you see the rush.
+  criterion is irreducibly fuzzy *and* you see the rush. When the skill's
+  job ends in a handover artifact, name it as the *only* skill-level
+  done-condition — otherwise runs end at whichever intermediate artifact
+  feels finished.
+- **Embargo** — an ordered workflow over-obeyed: the agent withholds a
+  finding made early to honor a later step's choreography, so the user
+  decides something while the agent sits on information that bears on it.
+  Any skill that sequences steps needs the escape valve stated: order
+  governs presentation, never disclosure.
+- **Lucky pass** — a validation run that succeeds only because the user or
+  world volunteered a critical input unprompted. The outcome was right but
+  the process didn't produce it; encode the eliciting probe as an explicit
+  step instead of banking on the luck recurring.
 - **Duplication** — the same meaning in two places. Keep a **single source
   of truth**.
 - **Sediment** — stale layers that accumulate because adding feels safe.
