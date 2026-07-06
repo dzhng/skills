@@ -35,6 +35,15 @@ depends on prior work.
 4. Verify the actual contract. For behavior changes, run the focused unit tests
    first; for browser-visible work, use the real browser/harness and inspect
    screenshots so the subject is framed and readable, not merely nonblank.
+   A visual CHANGE carries two extra proofs before you claim it: a
+   byte/pixel diff against the pre-change baseline on the production route
+   (static checks and re-anchored assertions all pass on a no-op — a
+   palette pass once shipped "verified" while the production frame was
+   byte-identical), and an unprimed
+   [screenshot-critique](../../visual/screenshot-critique/SKILL.md) — at the
+   user's reported framing when the pass answers their visual bug report —
+   before declaring it fixed; the implementer's eyes are primed by the fix
+   and repeatedly pass what fresh eyes catch.
    Never weaken an existing default gate or repin a failing contract without
    proving the old contract is wrong.
 5. **Review the change list and clean up after every pass, before committing.**

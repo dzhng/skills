@@ -1,6 +1,6 @@
 ---
 name: screenshot-critique
-description: Use the unprimed sub agent as a second set of eyes before accepting visual work.
+description: Use the unprimed sub agent as a second set of eyes before accepting visual work — MANDATORY before declaring any user-reported visual bug fixed or claiming a visual change verified; primed eyes pass defects fresh eyes catch.
 ---
 
 # Screenshot Critique
@@ -57,6 +57,22 @@ Spawn config:
 
 ## Rules
 
+- **Mandatory before "fixed":** never declare a user-reported visual bug fixed
+  on your own inspection — your eyes are primed by the fix you just made. Run
+  the unprimed critique on the candidate shot first; "mild residue" you are
+  tempted to wave through is exactly what it exists to catch. (Recorded
+  failure: a "fixed" sky that an unprimed agent identified as the terrain
+  mesh's underside filling the entire sky region.)
+- **Reproduce the reporter's framing.** When the user supplied a screenshot,
+  the critique must include a capture at that framing (same camera/zoom/spot,
+  or as close as reproducible) — a defect that lives at their framing can be
+  invisible at yours. Your chosen probe framing is a supplement, never the
+  substitute.
+- **Prove the change is real before critiquing it.** Byte/pixel-diff the
+  candidate against the pre-change baseline first: a critique of an unchanged
+  image "verifies" a no-op. (Recorded failure: a palette pass that never
+  reached the production render path — before/after were byte-identical and
+  only the diff caught it.)
 - Never tell the sub-agent the defect you expect it to find.
 - Use the current candidate screenshot, not a stale report or baseline image.
 - Do not rely on full-page report scale for small visual features. Attach
