@@ -50,6 +50,12 @@ it is moving ownership until there is one concept with clear consumers.
   the other already settled (orientation, units, edge cases, ordering).
 - Do not preserve dev-only compatibility by default. Unshipped scaffolding should
   move to the clean contract immediately.
+- **Constrain the model to what production actually writes.** A schema that
+  permits more than any writer produces — a list where every flow stores one
+  element, a state nothing reaches — taxes every consumer with the general
+  case. The tell: a consumer asking "but which one?" when the data can only
+  contain one. Enforce the constraint at the write path; widen when a real
+  use arrives.
 - Make ownership visible in stats, tests, or debug output when divergence was the
   bug class.
 - **A check that RE-DERIVES a value the code already computes will drift from
