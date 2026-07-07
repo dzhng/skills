@@ -54,9 +54,12 @@ whole feature is done.
 
 8. **Draft in parallel, then synthesize.** For any multi-slice feature, don't
    trust one pass to find the right cut. Fan out a few independent drafts and
-   merge the best into one plan (see the Workflow). Divergence is the point:
-   blind drafts surface slices, seams, and risks a lone plan misses — and where
-   they independently agree, you know the cut is solid.
+   merge the best into one plan (see the Workflow). Divergence is the point —
+   so engineer it on two axes: give each draft a different *bias* (a lens it
+   optimizes for) and, when more than one model family is available, a mix of
+   *models*. Blind, differently-biased drafts surface slices, seams, and risks
+   a lone plan misses — and where they independently agree, you know the cut
+   is solid.
 
 9. **Recursively uncover fog of war.** The first slice graph is a scouting pass,
    not proof the field is known. After drafting, inspect each high-risk slice as
@@ -86,12 +89,28 @@ whole feature is done.
    subagents** to draft the whole plan — fresh context each, a git worktree
    apiece if they must run or build to validate, otherwise have them return the
    plan inline. Give each the *same* brief from the interview and nothing else
-   (never another draft), so they diverge. Each one: recon the real code and
-   tests (measured facts, failed approaches, scope firewalls, greppable
-   file/test names), then propose the slice graph, package/app boundaries,
-   dependencies, API seams, playable deliverables, verification gates, and human
-   review checkpoints. Skip the fan-out only for a genuinely single-slice
-   problem.
+   (never another draft) — but assign each a **distinct bias** so their
+   divergence is structured, not accidental. The default trio:
+   - **A — fewest-slices bias:** the smallest ladder that still ships; merge
+     slices aggressively, question every rung.
+   - **B — risk-first bias:** front-load the scariest unknowns; order slices so
+     the plan dies fast if an assumption is wrong.
+   - **C — seam-quality bias:** optimize API boundaries, ownership, and
+     testability at each seam, even at the cost of more slices.
+
+   Swap in a different lens when the feature demands one (e.g. asset-pipeline
+   bias, perf bias), but keep the biases orthogonal. Also **mix model
+   families**: if you're currently instructed to draft with codex, run at
+   least one draft with claude — and vice versa — so the pool balances
+   different models' blind spots, not just different prompts. Family means
+   vendor (claude vs codex), not tier: every draft uses a state-of-the-art
+   model; never diversify by dropping to a weaker tier of the same family.
+   Each drafter:
+   recon the real code and tests (measured facts, failed approaches, scope
+   firewalls, greppable file/test names), then propose the slice graph,
+   package/app boundaries, dependencies, API seams, playable deliverables,
+   verification gates, and human review checkpoints. Skip the fan-out only for
+   a genuinely single-slice problem.
 4. **Synthesize:** read every draft and build the canonical plan yourself —
    don't anoint one. Take the strongest slicing, union the seams, risks, and
    firewalls each caught alone, and where drafts disagree pick the
