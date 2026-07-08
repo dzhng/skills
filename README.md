@@ -54,7 +54,7 @@ wrong*, until the goal is done.
    implementer while you stay the parent orchestrator and reviewer`.
 
 3. **The rest fires on its own.** The spec tells the loop when to call the
-   other skills — `/refactor-clean` and a review pass at the end of every
+   other skills — `/refactor-clean` and a `/code-review` pass at the end of every
    slice, `/screenshot-critique` and `/compare-screenshots` on anything
    visual, `/close-spec` when the last slice lands — and to update and
    re-slice the plan whenever implementation proves it stale. Every skill is

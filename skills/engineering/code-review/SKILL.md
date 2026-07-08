@@ -1,5 +1,5 @@
 ---
-name: review
+name: code-review
 description: Review changed code for naming, stale references, unnecessary complexity, and comment quality. Use after completing implementation work, before committing, or when the user asks to review or audit code.
 allowed-tools: Read Grep Glob Bash
 ---
