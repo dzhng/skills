@@ -16,6 +16,10 @@ whole feature is done.
    assets, and first useful playable checkpoint. Give your recommended
    answer with each question so the user can accept, reject, or edit it.
    Inspect the repo instead of asking questions the code can answer.
+   Close the interview by asking whether the plan must carry backward
+   compatibility or data migrations — the default is **neither**: hard
+   cutovers, no compat shims, no migration scaffolding, no deploy-order
+   dances. Only the user opting in puts them in the plan.
 
 2. **Slice at API seams.** Each slice should behave like a tiny library where
    possible: named module boundary, typed inputs/outputs, deterministic
@@ -150,11 +154,24 @@ whole feature is done.
    consumers migrate, never carried to the end by default. Encode the resulting
    single-owner invariants and the end-state ("reads as designed today, not tacked
    on") in the README so every implementing pass inherits them.
-8. **Build slice by slice:** leave each slice with a runnable artifact and
+8. **Scrollback audit:** the conversation dies; the spec survives. Before
+   calling the plan done, sweep the full conversation and every earlier
+   planning artifact (maps, interview notes, drafts) for content that exists
+   only there — decisions with their rationale, rejected alternatives with
+   why they lost, mid-stream scope changes, user-supplied constraints and
+   throwaway remarks that decided something. Each either lands in its owning
+   spec file or is deliberately dropped; a scope change propagates to every
+   spot that references it, not just where it landed. Then re-read each
+   surviving pre-plan artifact the spec supersedes (a map's kickoff prompt,
+   open-questions list, or proposed plan) and mark superseded sections with
+   a pointer to the plan — stale instructions must not be able to misroute a
+   fresh agent. Done when every conversation decision is findable in the
+   spec and no surviving artifact contradicts the ladder.
+9. **Build slice by slice:** leave each slice with a runnable artifact and
    verification before depending on it. Keep each artifact small enough to
    iterate on quickly. Keep the README's "Next Agent Prompt" written as the
    handoff text a future agent should read and follow.
-9. **Reslice when the work says so:** if implementation hits a snag and the slice
+10. **Reslice when the work says so:** if implementation hits a snag and the slice
    starts changing unrelated variables, stop broadening the patch. Update the spec
    first: split the slice into smaller contracts, name the frozen inputs, move the
    extra visual variables to later slices, and rewrite the Next Agent Prompt to

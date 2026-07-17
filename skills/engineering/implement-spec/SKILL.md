@@ -155,3 +155,13 @@ The **spec** is done — and only then is this skill done — when every slice a
 global TODO is closed, all gates are green, the handoff shows nothing left to
 pick up, and the spec has been archived with [close-spec](../close-spec/SKILL.md).
 Anything short of that is mid-implementation: keep going.
+
+**Slices are not the only unit of scope.** A spec also records *decisions* —
+ledger rows, decision-table entries, invariants — and a decision can be agreed
+in planning but never turned into a slice, especially when it's orthogonal to
+the slices' theme. "All slices closed" then reads as done while that decision is
+silently unbuilt. Before declaring the spec done, reconcile every recorded
+decision against the shipped code, not just the slice list: each one is either
+implemented, or explicitly marked "no code needed." A decision with no owning
+slice is the classic silent miss — the close-spec audit is the backstop for it,
+not the first line of defense.
