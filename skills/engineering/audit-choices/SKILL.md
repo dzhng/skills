@@ -55,7 +55,9 @@ Two ways in, same audit:
 2. **Triage each choice on evidence.** Forced by the plan, or invented?
    Invented ones get the scrutiny: is this the general solution, or a fix
    shaped to the one failing case? Verdict per choice: **sound**, **unsound**,
-   or **needs-user**. Reserve needs-user for genuinely user-only calls
+   or **needs-user** — and alongside the verdict, a **confidence**: how sure
+   the audit is that the user would have made this same call. Confidence is
+   what ranks the report. Reserve needs-user for genuinely user-only calls
    (taste, product direction, external cost); every needs-user entry records a
    recommended provisional call that is reversible, so an unsupervised caller
    can proceed without waiting. The audit never stalls a run: each entry is a
@@ -68,14 +70,17 @@ Two ways in, same audit:
 4. **Bank every choice in the ledger** (below), and promote load-bearing
    sound ones into the plan's handoff so later passes inherit them as givens
    instead of re-deciding.
-5. **Present the ledger.** The audit's deliverable is the ledger, handed to
-   whoever acts next — the calling workflow mid-run, the user at run's end.
-   Lead with needs-user rows and their provisional calls, then unsound
-   choices with their corrected decisions, then the sound decisions future
-   work will build on — sound is not skippable; those are the architecture
-   the user now owns. Only trivial discretion (internal naming, cosmetic
-   calls) compresses to a one-line count. It must stand alone without the
-   diff.
+5. **Present the ledger as a ranked list — least confident first.** The
+   audit's deliverable is the ledger, handed to whoever acts next — the
+   calling workflow mid-run, the user at run's end. Rank every choice by
+   confidence, ascending: the top of the report is whatever the audit is
+   least sure the user would have chosen (needs-user rows with their
+   provisional calls, unsound choices with their corrected decisions), and
+   confident-but-load-bearing sound decisions follow — sound is not
+   skippable; those are the architecture the user now owns. The user reads
+   top-down and can stop when confidence gets boring. Only trivial
+   discretion (internal naming, cosmetic calls) compresses to a one-line
+   count. It must stand alone without the diff.
 
 ## The Choices Ledger
 
@@ -91,6 +96,8 @@ audited choice:
 - **Verdict** — sound / unsound / needs-user, with a one-line why. For
   unsound: the corrected decision to redo from. For needs-user: the
   recommended provisional call and how to reverse it.
+- **Confidence** — how sure the audit is that the user would have made the
+  same call (low / medium / high). Ranks the report, ascending.
 
 Rules of the ledger:
 
@@ -125,6 +132,7 @@ Rules of the ledger:
 The audit is done when every invented choice in the pass has a ledger entry
 with a verdict, every unsound entry names the corrected decision to redo
 from, every needs-user entry carries a reversible provisional call, and the
-ledger has been presented to whoever acts next — with the tree untouched. A
+ledger has been presented, ranked least-confident-first, to whoever acts
+next — with the tree untouched. A
 handback that shows the diff instead of the choices, or a "fix" applied
 during the audit, is not done.
