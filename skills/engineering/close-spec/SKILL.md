@@ -1,6 +1,6 @@
 ---
 name: close-spec
-description: When a spec under specs/<feature>/ is done shipping (a write-spec build, or any planned task that produced a spec), archive it to specs/done/ and rewrite it from a build-plan into a durable rationale — the why, the principles, the invariants — pointing back to the real code for the how. Use when implementation has landed and the plan no longer matches what shipped, or the user says a feature/spec is finished. Pairs with [write-spec](../write-spec/SKILL.md) (the plan this closes).
+description: When a spec under specs/<feature>/ is done shipping (a write-spec build, or any planned task that produced a spec), archive it to specs/done/ and rewrite it from a build-plan into a durable rationale — the why, the principles, the invariants — pointing back to the real code for the how. Use when implementation has landed and the plan no longer matches what shipped, or the user says a feature/spec is finished. Pairs with [write-spec](../write-spec/SKILL.md) (the plan this closes) and [review](../review/SKILL.md) (run before closing).
 ---
 
 # Close Spec
@@ -19,7 +19,7 @@ restates what a function does, cut it and point at the function instead.
 
 1. **Confirm it shipped.** The feature is merged or working in-tree and its
    tests/screenshot gates are green. If slices remain unverified, it isn't
-   done — finish or review first.
+   done — finish or [review](../review/SKILL.md) first.
 
 2. **Diff plan against reality.** Read the spec's README and slices, then read
    what actually landed. Note every place the build diverged from the plan:
