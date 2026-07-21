@@ -19,7 +19,7 @@ skill IS the explicit ask that authorizes `codex exec` delegation under the
   subagents.
 - **You orchestrate and review.** The spec loop stays yours: pick the next
   slice, reconcile plan with code, author each prompt end-to-end, integrate
-  diffs, run the gates, refactor-clean and review the merged tree, commit,
+  diffs, run the gates, review the merged tree, commit,
   update the handoff, run maintenance checkpoints. None of that delegates.
 
 Keep a pass yourself only when slicing it sharply would cost more than doing
