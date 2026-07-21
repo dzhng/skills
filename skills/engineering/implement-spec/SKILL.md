@@ -98,8 +98,22 @@ depends on prior work.
    and slice graph and choose the same next action without conversation history.
 9. **Continue.** If any slice or global TODO is still open, go straight back to
    step 1 for the next one — same session, no pause for acknowledgement. Keep
-   looping until every TODO is closed. When the last slice lands, close the spec
-   with [close-spec](../close-spec/SKILL.md).
+   looping until every TODO is closed.
+10. **Consolidate the choices ledger, then close.** When the last slice lands, the
+   `choices.md` you've been appending to per pass is build-order sediment: entries
+   banked early carry "provisional — revisit in slice N" verdicts that a later pass
+   silently resolved, entries a later pass reverted still sit there, and the same
+   choice may appear twice. The per-pass rule "banked is settled, never re-listed"
+   is what let that drift accumulate — so the final consolidation is its deliberate
+   exception. Before archiving, **rewrite `choices.md` from scratch** as the final
+   ledger: re-audit every banked choice against the **final shipped code** (not the
+   pass it landed in), collapse each provisional/needs-later entry to its actual
+   end state, drop anything a later pass superseded or reverted, and merge
+   duplicates. Keep it **choices only** — no gate results, e2e evidence, or
+   review-finding narration; those are reported elsewhere and are not decisions the
+   user now owns. Present it per [audit-choices](../audit-choices/SKILL.md): grouped
+   by verdict, ranked least-confident-first, every entry ELI5 and standalone.
+   *Then* close the spec with [close-spec](../close-spec/SKILL.md).
 
 ## Rules
 
@@ -167,7 +181,10 @@ Anything short of that is mid-implementation: keep going.
 The final handback presents the choices ledger, not the diff, per
 [audit-choices](../audit-choices/SKILL.md) — a days-long unsupervised run
 earns its merge through this ledger; it is the user's review surface for
-everything decided without them.
+everything decided without them. Hand over the **consolidated** ledger from
+step 10 (final state, verified against shipped code, choices only), never the
+raw per-pass append — a ledger still carrying "will be done in a later slice"
+verdicts tells the user you never went back to confirm it was.
 
 **Slices are not the only unit of scope.** A spec also records *decisions* —
 ledger rows, decision-table entries, invariants — and a decision can be agreed
