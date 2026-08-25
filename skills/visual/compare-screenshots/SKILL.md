@@ -108,9 +108,11 @@ Keep comparison scripts inside the skill or a temporary workspace, not in
 product code, unless the product genuinely needs screenshot comparison at
 runtime.
 
-- `scripts/visual-parity-diff.mjs` is a reusable local helper. Run it with
-  `REFERENCE_DIR=<png-folder>`, `CANDIDATE_DIR=<png-folder>`, and optional
-  `OUT_DIR=<artifact-folder>`. `REPORT_ORDER=a,b,c` pins ordering;
+- `scripts/visual-parity-diff.mjs` is a reusable local helper. Its PNG and
+  pixel-diff runtime is bundled with the skill, so target repositories do not
+  need `pngjs` or `pixelmatch`. Run it with `REFERENCE_DIR=<png-folder>`,
+  `CANDIDATE_DIR=<png-folder>`, and optional `OUT_DIR=<artifact-folder>`.
+  `REPORT_ORDER=a,b,c` pins ordering;
   `CROPS_JSON=<file>` adds labeled crops (keyed by image id, each crop in pixels
   or `{ "unit": "ratio" }` normalized bounds).
 - For other tasks, adapt the same artifact set rather than adding one-off
