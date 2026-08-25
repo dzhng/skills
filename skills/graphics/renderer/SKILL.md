@@ -179,6 +179,24 @@ this skill knows today's module layout.
   TSL/WebGPU (including reverse-Z, timestamps) faithfully but orders of
   magnitude slower; perf gates run on hardware only, and the standing crowd
   perf gate + frame-time ledger judge every renderer-affecting slice.
+- **Prove which GPU drew the frame before quoting a frame time.** Falling back
+  to software is silent: Playwright's default headless is
+  `chromium_headless_shell`, which ships no GPU backend at all and lands on
+  SwiftShader without an error, so the run looks green and every number in it is
+  fiction. Launch with `channel: 'chromium'` for the full browser against the
+  real device, and read the unmasked renderer string out of the page
+  (`ANGLE (Google, ..., SwiftShader Device)` versus
+  `ANGLE (Apple, ANGLE Metal Renderer: Apple M3 Pro)`) into the capture's own
+  report so the check is recorded, not remembered. One measured case: the same
+  1024x1024 scene ran 32fps on the shell and 127fps on the real GPU — a 4x lie
+  from one line of launch config. Fix a fallback with
+  `npx playwright install chromium` rather than keeping the number with a
+  caveat attached; a software-rendered run still counts for pixel, budget, and
+  functional checks, but its timings are void.
+- **Run GPU suites single-worker.** Parallel browser contexts contend for one
+  GPU, and the frame-time collapse drifts app time away from wall time: timed
+  phases and screenshot baselines flake for a reason that never appears in the
+  diff. `workers: 1` for anything that renders.
 - Exercise capabilities (GPU timer, MSAA, depth formats) in the production
   shell shape, not only lab shells — a capability that only ever ran in a
   simpler configuration can be invalid in the real one.
@@ -255,4 +273,7 @@ this skill knows today's module layout.
 - A camera is posed by hand-rolled orbit/projection math beside the shared
   camera helper.
 - A snapshot gate flakes frame-to-frame — suspect an unowned time source (TSL
-  `time`, `performance.now`, unseeded RNG) before suspecting the GPU.
+  `time`, `performance.now`, unseeded RNG) first, then parallel test workers
+  contending for the GPU, before suspecting the GPU itself.
+- A perf regression appears with no plausible cause in the diff — check the
+  renderer string before the code; a lost GPU reads as a slow commit.

@@ -7,7 +7,9 @@ description: Use the unprimed sub agent as a second set of eyes before accepting
 
 Use an unprimed sub-agent as a second set of eyes before accepting visual work.
 This is for visual defects, not pixel metrics; pair it with
-`compare-screenshots` when you also need numbers.
+`compare-screenshots` when you also need numbers — including on a single shot
+with nothing to compare against, whose scene metrics say whether the frame has
+any content in it at all.
 
 ## Workflow
 
@@ -73,6 +75,18 @@ Spawn config:
   image "verifies" a no-op. (Recorded failure: a palette pass that never
   reached the production render path — before/after were byte-identical and
   only the diff caught it.)
+- **Hand over the complete capture set, never a curated one.** Every state you
+  captured, every viewport, desktop and mobile. Choosing which shots to show is
+  the same bias the fresh pass exists to remove: you will pick the ones you
+  already believe are fine, and the weak state is exactly the one that gets
+  left out. If a state is hard to reach by hand, drive it deterministically and
+  capture it rather than omitting it.
+- **When no sub-agent is available, argue the other side yourself.** For each
+  feature under judgment, write one sentence making the strongest case that it
+  is broken, citing only what is visible in the shot — then decide. Writing the
+  case first is what makes it adversarial; deciding first and justifying after
+  is the primed inspection this skill exists to replace. Include those
+  sentences in the report so the reasoning is reviewable.
 - Never tell the sub-agent the defect you expect it to find.
 - Use the current candidate screenshot, not a stale report or baseline image.
 - Do not rely on full-page report scale for small visual features. Attach
