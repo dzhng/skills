@@ -5,9 +5,9 @@ import { pathToFileURL } from 'node:url';
 
 const cwd = resolve(process.cwd());
 const repoRoot = process.env.REPO_ROOT ? resolve(process.env.REPO_ROOT) : basename(cwd) === 'web' ? resolve(cwd, '..') : cwd;
-const require = createRequire(resolve(repoRoot, 'web/package.json'));
-const { PNG } = require('pngjs');
-const pixelmatch = (await import(require.resolve('pixelmatch'))).default;
+const require = createRequire(import.meta.url);
+const { PNG } = require('../vendor/pngjs');
+const pixelmatch = (await import('../vendor/pixelmatch/index.js')).default;
 
 const currentDir = requiredDir('REFERENCE_DIR');
 const candidateDir = requiredDir('CANDIDATE_DIR');
