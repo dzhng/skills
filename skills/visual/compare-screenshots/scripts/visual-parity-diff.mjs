@@ -9,7 +9,7 @@ const require = createRequire(resolve(repoRoot, 'web/package.json'));
 const { PNG } = require('pngjs');
 const pixelmatch = (await import(require.resolve('pixelmatch'))).default;
 
-const currentDir = requiredDir('REFERENCE_DIR');
+const currentDir = process.env.REFERENCE_DIR ? requiredDir('REFERENCE_DIR') : null;
 const candidateDir = requiredDir('CANDIDATE_DIR');
 const reportOrder = (process.env.REPORT_ORDER ?? '')
   .split(',')
@@ -19,6 +19,11 @@ const cropSpecs = process.env.CROPS_JSON ? await readJson(resolvePath(process.en
 const outDir = resolvePath(process.env.OUT_DIR ?? 'visual-diff');
 const artifactRoot = basename(outDir);
 await mkdir(outDir, { recursive: true });
+
+if (!currentDir) {
+  await reportSceneMetricsOnly();
+  process.exit(0);
+}
 
 const pairs = await discoverPairs();
 const results = [];
@@ -125,6 +130,10 @@ for (const pair of pairs) {
     candidate: relative(repoRoot, candidatePath),
     dimensions: { width, height },
     parityDistance: round(parityDistance),
+    sceneMetrics: {
+      current: computeSceneMetrics(current),
+      candidate: computeSceneMetrics(candidate),
+    },
     grayscale: {
       mae: round(sumAbs / total),
       rmse: round(Math.sqrt(sumSq / total)),
@@ -175,6 +184,108 @@ const reportPath = resolve(outDir, 'visual-parity-diff.json');
 await writeFile(reportPath, JSON.stringify(report, null, 2));
 console.log(JSON.stringify(report, null, 2));
 console.log(`wrote ${relative(repoRoot, reportPath)}`);
+
+async function reportSceneMetricsOnly() {
+  const names = await orderedPngNames(candidateDir);
+  if (names.length === 0) {
+    throw new Error(`no PNGs found in ${relative(repoRoot, candidateDir)}`);
+  }
+  const results = [];
+  for (const name of names) {
+    const imagePath = resolve(candidateDir, name);
+    const png = PNG.sync.read(await readFile(imagePath));
+    results.push({
+      id: basename(name, '.png'),
+      image: relative(repoRoot, imagePath),
+      dimensions: { width: png.width, height: png.height },
+      sceneMetrics: computeSceneMetrics(png),
+    });
+  }
+  const report = {
+    kind: 'screenshot-scene-metrics',
+    generatedAt: new Date().toISOString(),
+    note: 'Absolute per-image telemetry, no reference involved. Low values locate flat, sparse, or empty captures; they never accept or reject an image on their own.',
+    imageCount: results.length,
+    results,
+  };
+  const reportPath = resolve(outDir, 'scene-metrics.json');
+  await writeFile(reportPath, JSON.stringify(report, null, 2));
+  console.log(JSON.stringify(report, null, 2));
+  console.log(`wrote ${relative(repoRoot, reportPath)}`);
+}
+
+// Describes one image on its own terms, with nothing to compare it against.
+// Sampled on a coarse grid so the cost stays trivial beside the pair work, and
+// so the numbers read scene composition instead of per-pixel noise.
+function computeSceneMetrics(png) {
+  const stepX = Math.max(1, Math.floor(png.width / 160));
+  const stepY = Math.max(1, Math.floor(png.height / 90));
+  const cols = Math.floor(png.width / stepX);
+  const rows = Math.floor(png.height / stepY);
+  if (cols < 2 || rows < 2) return undefined;
+
+  const gray = new Float64Array(cols * rows);
+  const buckets = new Map();
+  let samples = 0;
+
+  for (let gy = 0; gy < rows; gy++) {
+    for (let gx = 0; gx < cols; gx++) {
+      const o = (gy * stepY * png.width + gx * stepX) * 4;
+      const r = png.data[o];
+      const g = png.data[o + 1];
+      const b = png.data[o + 2];
+      gray[gy * cols + gx] = luminance(r, g, b);
+      // 4 bits per channel: distinct enough to separate materials, coarse
+      // enough that gradients and dither do not read as authored variety.
+      const key = `${r >> 4},${g >> 4},${b >> 4}`;
+      buckets.set(key, (buckets.get(key) ?? 0) + 1);
+      samples++;
+    }
+  }
+
+  const sorted = Array.from(gray).sort((a, b) => a - b);
+  const mean = sorted.reduce((sum, value) => sum + value, 0) / sorted.length;
+  const p5 = sorted[Math.floor(sorted.length * 0.05)];
+  const p95 = sorted[Math.floor(sorted.length * 0.95)];
+
+  let entropy = 0;
+  let dominant = 0;
+  for (const count of buckets.values()) {
+    const p = count / samples;
+    entropy -= p * Math.log2(p);
+    dominant = Math.max(dominant, count);
+  }
+
+  let edges = 0;
+  let checked = 0;
+  for (let gy = 0; gy < rows - 1; gy++) {
+    for (let gx = 0; gx < cols - 1; gx++) {
+      const i = gy * cols + gx;
+      const dx = Math.abs(gray[i] - gray[i + 1]);
+      const dy = Math.abs(gray[i] - gray[i + cols]);
+      if (Math.max(dx, dy) > 12) edges++;
+      checked++;
+    }
+  }
+
+  return {
+    colorBuckets: buckets.size,
+    colorEntropyBits: round(entropy),
+    edgeDensity: round(edges / checked),
+    dominantColorShare: round(dominant / samples),
+    luminanceMean: round(mean),
+    luminanceP5: round(p5),
+    luminanceP95: round(p95),
+    luminanceContrast: round(p95 - p5),
+  };
+}
+
+async function orderedPngNames(dir) {
+  const names = await pngNames(dir);
+  const order = new Map(reportOrder.map((id, index) => [`${id}.png`, index]));
+  names.sort((a, b) => (order.get(a) ?? 999_999) - (order.get(b) ?? 999_999) || a.localeCompare(b));
+  return names;
+}
 
 async function discoverPairs() {
   const [currentFiles, candidateFiles] = await Promise.all([pngNames(currentDir), pngNames(candidateDir)]);
