@@ -86,6 +86,12 @@ from a single PNG:
   primitive-dominant scene, or the subject sitting outside the crop.
 - `luminanceContrast` under ~60: fog, darkness, or haze compressing the whole
   frame into one band.
+- `transparentShare` above 0 on a capture that should be opaque: the capture
+  itself is wrong. A transparent pixel keeps whatever RGB it was left with, so
+  an invisible frame can look rich until it is composited — the scene metrics
+  composite before measuring, and name the invisible share rather than letting
+  you infer it. The pair metrics above still read stored RGB, so this field is
+  where transparency gets told either way.
 
 These are thresholds for *suspicion*, not gates. A deliberately minimal design,
 a night scene, an empty-state screen, and a whiteboard all trip them honestly.
@@ -140,6 +146,12 @@ runtime.
   diff artifacts. Use it on a lone screenshot, on a full capture set before
   anyone reviews it, or to find which side of a large distance is the empty
   one.
+- `scripts/visual-parity-diff.eval.mjs` is the helper's own eval: it generates
+  fixtures whose correct answer is known by construction — empty, transparent,
+  primitive-dominant, authored, degenerate — and asserts the classification,
+  the invariances, and the CLI contract. Run it with the same `REPO_ROOT` after
+  changing the script. Never satisfy a failing check by loosening a threshold
+  until you have shown the fixture, not the code, is what's wrong.
 - For other tasks, adapt the same artifact set rather than adding one-off
   scripts to the application. Extend the helper if a needed pair is uncovered.
 

@@ -20,170 +20,175 @@ const outDir = resolvePath(process.env.OUT_DIR ?? 'visual-diff');
 const artifactRoot = basename(outDir);
 await mkdir(outDir, { recursive: true });
 
-if (!currentDir) {
+// Two modes, one helper: with a reference folder this diffs pairs; without
+// one it only measures each capture on its own terms.
+if (currentDir) {
+  await reportPairDiff();
+} else {
   await reportSceneMetricsOnly();
-  process.exit(0);
 }
 
-const pairs = await discoverPairs();
-const results = [];
-for (const pair of pairs) {
-  const currentPath = resolve(repoRoot, pair.current);
-  const candidatePath = resolve(repoRoot, pair.candidate);
-  const current = PNG.sync.read(await readFile(currentPath));
-  const candidate = PNG.sync.read(await readFile(candidatePath));
-  if (current.width !== candidate.width || current.height !== candidate.height) {
-    throw new Error(`${pair.id}: image sizes differ: current=${current.width}x${current.height} candidate=${candidate.width}x${candidate.height}`);
+async function reportPairDiff() {
+  const pairs = await discoverPairs();
+  const results = [];
+  for (const pair of pairs) {
+    const currentPath = resolve(repoRoot, pair.current);
+    const candidatePath = resolve(repoRoot, pair.candidate);
+    const current = PNG.sync.read(await readFile(currentPath));
+    const candidate = PNG.sync.read(await readFile(candidatePath));
+    if (current.width !== candidate.width || current.height !== candidate.height) {
+      throw new Error(`${pair.id}: image sizes differ: current=${current.width}x${current.height} candidate=${candidate.width}x${candidate.height}`);
+    }
+
+    const width = current.width;
+    const height = current.height;
+    const grayCurrent = new PNG({ width, height });
+    const grayCandidate = new PNG({ width, height });
+    const absDiff = new PNG({ width, height });
+    const sideBySide = new PNG({ width: width * 2, height });
+    const edgeCurrent = new PNG({ width, height });
+    const edgeCandidate = new PNG({ width, height });
+    const edgeDiff = new PNG({ width, height });
+    const currentGray = new Float32Array(width * height);
+    const candidateGray = new Float32Array(width * height);
+
+    let sumAbs = 0;
+    let sumSq = 0;
+    let over16 = 0;
+    let over32 = 0;
+    let over64 = 0;
+    let blackCurrent = 0;
+    let blackCandidate = 0;
+    let terrainCurrent = 0;
+    let terrainCandidate = 0;
+    let luminanceCurrent = 0;
+    let luminanceCandidate = 0;
+
+    for (let i = 0; i < width * height; i++) {
+      const o = i * 4;
+      const cg = luminance(current.data[o], current.data[o + 1], current.data[o + 2]);
+      const wg = luminance(candidate.data[o], candidate.data[o + 1], candidate.data[o + 2]);
+      luminanceCurrent += cg;
+      luminanceCandidate += wg;
+      currentGray[i] = cg;
+      candidateGray[i] = wg;
+      const d = Math.abs(cg - wg);
+      sumAbs += d;
+      sumSq += d * d;
+      if (d > 16) over16++;
+      if (d > 32) over32++;
+      if (d > 64) over64++;
+      if (cg < 24) blackCurrent++;
+      if (wg < 24) blackCandidate++;
+      if (isTerrainLike(current.data[o], current.data[o + 1], current.data[o + 2])) terrainCurrent++;
+      if (isTerrainLike(candidate.data[o], candidate.data[o + 1], candidate.data[o + 2])) terrainCandidate++;
+      copyPixel(current, sideBySide, i, xOf(i, width), yOf(i, width));
+      copyPixel(candidate, sideBySide, i, xOf(i, width) + width, yOf(i, width));
+      writeGray(grayCurrent, o, cg);
+      writeGray(grayCandidate, o, wg);
+      const heat = Math.min(255, d * 4);
+      absDiff.data[o] = heat;
+      absDiff.data[o + 1] = Math.max(0, 160 - heat);
+      absDiff.data[o + 2] = Math.max(0, 255 - heat);
+      absDiff.data[o + 3] = 255;
+    }
+
+    const edgeStats = writeEdges(currentGray, candidateGray, edgeCurrent, edgeCandidate, edgeDiff, width, height);
+    const pixelmatchDiff = new PNG({ width, height });
+    const mismatched = pixelmatch(
+      grayCurrent.data,
+      grayCandidate.data,
+      pixelmatchDiff.data,
+      width,
+      height,
+      { threshold: 0.08, includeAA: true },
+    );
+
+    await writePng(resolve(outDir, `${pair.id}-side-by-side.png`), sideBySide);
+    await writePng(resolve(outDir, `${pair.id}-current-gray.png`), grayCurrent);
+    await writePng(resolve(outDir, `${pair.id}-candidate-gray.png`), grayCandidate);
+    await writePng(resolve(outDir, `${pair.id}-absdiff.png`), absDiff);
+    await writePng(resolve(outDir, `${pair.id}-pixelmatch.png`), pixelmatchDiff);
+    await writePng(resolve(outDir, `${pair.id}-current-edges.png`), edgeCurrent);
+    await writePng(resolve(outDir, `${pair.id}-candidate-edges.png`), edgeCandidate);
+    await writePng(resolve(outDir, `${pair.id}-edge-diff.png`), edgeDiff);
+
+    const total = width * height;
+    const diffRatio32 = over32 / total;
+    const pixelmatchRatio = mismatched / total;
+    const edgeDiffRatio32 = edgeStats.diffOver32 / total;
+    const edgeEnergyRatio = edgeEnergyRatioOf(edgeStats.currentEnergy, edgeStats.candidateEnergy);
+    const parityDistance =
+      0.35 * diffRatio32
+      + 0.25 * pixelmatchRatio
+      + 0.25 * edgeDiffRatio32
+      + 0.15 * Math.min(1, Math.abs(Math.log2(edgeEnergyRatio)));
+    const crop = cropFor(pair.id, width, height);
+    const worldCrop = crop
+      ? await analyzeWorldCrop(pair.id, crop, current, candidate, currentGray, candidateGray, width, height)
+      : undefined;
+
+    const result = {
+      id: pair.id,
+      current: relative(repoRoot, currentPath),
+      candidate: relative(repoRoot, candidatePath),
+      dimensions: { width, height },
+      parityDistance: round(parityDistance),
+      sceneMetrics: {
+        current: computeSceneMetrics(current),
+        candidate: computeSceneMetrics(candidate),
+      },
+      grayscale: {
+        mae: round(sumAbs / total),
+        rmse: round(Math.sqrt(sumSq / total)),
+        diffRatio16: round(over16 / total),
+        diffRatio32: round(diffRatio32),
+        diffRatio64: round(over64 / total),
+        pixelmatchRatio: round(pixelmatchRatio),
+      },
+      contentProxies: {
+        blackRatioCurrent: round(blackCurrent / total),
+        blackRatioCandidate: round(blackCandidate / total),
+        terrainLikeRatioCurrent: round(terrainCurrent / total),
+        terrainLikeRatioCandidate: round(terrainCandidate / total),
+        avgLuminanceCurrent: round(luminanceCurrent / total),
+        avgLuminanceCandidate: round(luminanceCandidate / total),
+        avgLuminanceDelta: round((luminanceCandidate - luminanceCurrent) / total),
+        edgeEnergyCurrent: round(edgeStats.currentEnergy),
+        edgeEnergyCandidate: round(edgeStats.candidateEnergy),
+        edgeEnergyRatio: round(edgeEnergyRatio),
+        edgeDiffRatio32: round(edgeDiffRatio32),
+      },
+      artifacts: {
+        sideBySide: `${artifactRoot}/${pair.id}-side-by-side.png`,
+        currentGray: `${artifactRoot}/${pair.id}-current-gray.png`,
+        candidateGray: `${artifactRoot}/${pair.id}-candidate-gray.png`,
+        absDiff: `${artifactRoot}/${pair.id}-absdiff.png`,
+        pixelmatch: `${artifactRoot}/${pair.id}-pixelmatch.png`,
+        currentEdges: `${artifactRoot}/${pair.id}-current-edges.png`,
+        candidateEdges: `${artifactRoot}/${pair.id}-candidate-edges.png`,
+        edgeDiff: `${artifactRoot}/${pair.id}-edge-diff.png`,
+      },
+    };
+    if (worldCrop) result.worldCrop = worldCrop;
+    results.push(result);
   }
 
-  const width = current.width;
-  const height = current.height;
-  const grayCurrent = new PNG({ width, height });
-  const grayCandidate = new PNG({ width, height });
-  const absDiff = new PNG({ width, height });
-  const sideBySide = new PNG({ width: width * 2, height });
-  const edgeCurrent = new PNG({ width, height });
-  const edgeCandidate = new PNG({ width, height });
-  const edgeDiff = new PNG({ width, height });
-  const currentGray = new Float32Array(width * height);
-  const candidateGray = new Float32Array(width * height);
-
-  let sumAbs = 0;
-  let sumSq = 0;
-  let over16 = 0;
-  let over32 = 0;
-  let over64 = 0;
-  let blackCurrent = 0;
-  let blackCandidate = 0;
-  let terrainCurrent = 0;
-  let terrainCandidate = 0;
-  let luminanceCurrent = 0;
-  let luminanceCandidate = 0;
-
-  for (let i = 0; i < width * height; i++) {
-    const o = i * 4;
-    const cg = luminance(current.data[o], current.data[o + 1], current.data[o + 2]);
-    const wg = luminance(candidate.data[o], candidate.data[o + 1], candidate.data[o + 2]);
-    luminanceCurrent += cg;
-    luminanceCandidate += wg;
-    currentGray[i] = cg;
-    candidateGray[i] = wg;
-    const d = Math.abs(cg - wg);
-    sumAbs += d;
-    sumSq += d * d;
-    if (d > 16) over16++;
-    if (d > 32) over32++;
-    if (d > 64) over64++;
-    if (cg < 24) blackCurrent++;
-    if (wg < 24) blackCandidate++;
-    if (isTerrainLike(current.data[o], current.data[o + 1], current.data[o + 2])) terrainCurrent++;
-    if (isTerrainLike(candidate.data[o], candidate.data[o + 1], candidate.data[o + 2])) terrainCandidate++;
-    copyPixel(current, sideBySide, i, xOf(i, width), yOf(i, width));
-    copyPixel(candidate, sideBySide, i, xOf(i, width) + width, yOf(i, width));
-    writeGray(grayCurrent, o, cg);
-    writeGray(grayCandidate, o, wg);
-    const heat = Math.min(255, d * 4);
-    absDiff.data[o] = heat;
-    absDiff.data[o + 1] = Math.max(0, 160 - heat);
-    absDiff.data[o + 2] = Math.max(0, 255 - heat);
-    absDiff.data[o + 3] = 255;
-  }
-
-  const edgeStats = writeEdges(currentGray, candidateGray, edgeCurrent, edgeCandidate, edgeDiff, width, height);
-  const pixelmatchDiff = new PNG({ width, height });
-  const mismatched = pixelmatch(
-    grayCurrent.data,
-    grayCandidate.data,
-    pixelmatchDiff.data,
-    width,
-    height,
-    { threshold: 0.08, includeAA: true },
-  );
-
-  await writePng(resolve(outDir, `${pair.id}-side-by-side.png`), sideBySide);
-  await writePng(resolve(outDir, `${pair.id}-current-gray.png`), grayCurrent);
-  await writePng(resolve(outDir, `${pair.id}-candidate-gray.png`), grayCandidate);
-  await writePng(resolve(outDir, `${pair.id}-absdiff.png`), absDiff);
-  await writePng(resolve(outDir, `${pair.id}-pixelmatch.png`), pixelmatchDiff);
-  await writePng(resolve(outDir, `${pair.id}-current-edges.png`), edgeCurrent);
-  await writePng(resolve(outDir, `${pair.id}-candidate-edges.png`), edgeCandidate);
-  await writePng(resolve(outDir, `${pair.id}-edge-diff.png`), edgeDiff);
-
-  const total = width * height;
-  const diffRatio32 = over32 / total;
-  const pixelmatchRatio = mismatched / total;
-  const edgeDiffRatio32 = edgeStats.diffOver32 / total;
-  const edgeEnergyRatio = edgeStats.candidateEnergy / Math.max(0.0001, edgeStats.currentEnergy);
-  const parityDistance =
-    0.35 * diffRatio32
-    + 0.25 * pixelmatchRatio
-    + 0.25 * edgeDiffRatio32
-    + 0.15 * Math.min(1, Math.abs(Math.log2(edgeEnergyRatio)));
-  const crop = cropFor(pair.id, width, height);
-  const worldCrop = crop
-    ? await analyzeWorldCrop(pair.id, crop, current, candidate, currentGray, candidateGray, width, height)
-    : undefined;
-
-  const result = {
-    id: pair.id,
-    current: relative(repoRoot, currentPath),
-    candidate: relative(repoRoot, candidatePath),
-    dimensions: { width, height },
-    parityDistance: round(parityDistance),
-    sceneMetrics: {
-      current: computeSceneMetrics(current),
-      candidate: computeSceneMetrics(candidate),
-    },
-    grayscale: {
-      mae: round(sumAbs / total),
-      rmse: round(Math.sqrt(sumSq / total)),
-      diffRatio16: round(over16 / total),
-      diffRatio32: round(diffRatio32),
-      diffRatio64: round(over64 / total),
-      pixelmatchRatio: round(pixelmatchRatio),
-    },
-    contentProxies: {
-      blackRatioCurrent: round(blackCurrent / total),
-      blackRatioCandidate: round(blackCandidate / total),
-      terrainLikeRatioCurrent: round(terrainCurrent / total),
-      terrainLikeRatioCandidate: round(terrainCandidate / total),
-      avgLuminanceCurrent: round(luminanceCurrent / total),
-      avgLuminanceCandidate: round(luminanceCandidate / total),
-      avgLuminanceDelta: round((luminanceCandidate - luminanceCurrent) / total),
-      edgeEnergyCurrent: round(edgeStats.currentEnergy),
-      edgeEnergyCandidate: round(edgeStats.candidateEnergy),
-      edgeEnergyRatio: round(edgeEnergyRatio),
-      edgeDiffRatio32: round(edgeDiffRatio32),
-    },
-    artifacts: {
-      sideBySide: `${artifactRoot}/${pair.id}-side-by-side.png`,
-      currentGray: `${artifactRoot}/${pair.id}-current-gray.png`,
-      candidateGray: `${artifactRoot}/${pair.id}-candidate-gray.png`,
-      absDiff: `${artifactRoot}/${pair.id}-absdiff.png`,
-      pixelmatch: `${artifactRoot}/${pair.id}-pixelmatch.png`,
-      currentEdges: `${artifactRoot}/${pair.id}-current-edges.png`,
-      candidateEdges: `${artifactRoot}/${pair.id}-candidate-edges.png`,
-      edgeDiff: `${artifactRoot}/${pair.id}-edge-diff.png`,
-    },
+  results.sort((a, b) => b.parityDistance - a.parityDistance);
+  const report = {
+    kind: 'screenshot-parity-diff',
+    generatedAt: new Date().toISOString(),
+    note: 'Lower parityDistance means the candidate is closer to the reference for this fixed pair. This is a distance metric, not an acceptance gate.',
+    pairCount: results.length,
+    worstPair: results[0]?.id ?? null,
+    results,
   };
-  if (worldCrop) result.worldCrop = worldCrop;
-  results.push(result);
+
+  const reportPath = resolve(outDir, 'visual-parity-diff.json');
+  await writeFile(reportPath, JSON.stringify(report, null, 2));
+  console.log(JSON.stringify(report, null, 2));
+  console.log(`wrote ${relative(repoRoot, reportPath)}`);
 }
-
-results.sort((a, b) => b.parityDistance - a.parityDistance);
-const report = {
-  kind: 'screenshot-parity-diff',
-  generatedAt: new Date().toISOString(),
-  note: 'Lower parityDistance means the candidate is closer to the reference for this fixed pair. This is a distance metric, not an acceptance gate.',
-  pairCount: results.length,
-  worstPair: results[0]?.id ?? null,
-  results,
-};
-
-const reportPath = resolve(outDir, 'visual-parity-diff.json');
-await writeFile(reportPath, JSON.stringify(report, null, 2));
-console.log(JSON.stringify(report, null, 2));
-console.log(`wrote ${relative(repoRoot, reportPath)}`);
 
 async function reportSceneMetricsOnly() {
   const names = await orderedPngNames(candidateDir);
@@ -227,13 +232,19 @@ function computeSceneMetrics(png) {
   const gray = new Float64Array(cols * rows);
   const buckets = new Map();
   let samples = 0;
+  let transparent = 0;
 
   for (let gy = 0; gy < rows; gy++) {
     for (let gx = 0; gx < cols; gx++) {
       const o = (gy * stepY * png.width + gx * stepX) * 4;
-      const r = png.data[o];
-      const g = png.data[o + 1];
-      const b = png.data[o + 2];
+      // Measure what the frame shows, not what it stores. A fully transparent
+      // pixel keeps whatever RGB it was left with, so an invisible capture can
+      // read as rich, high-entropy content until it is composited down.
+      const alpha = png.data[o + 3] / 255;
+      if (alpha === 0) transparent++;
+      const r = png.data[o] * alpha;
+      const g = png.data[o + 1] * alpha;
+      const b = png.data[o + 2] * alpha;
       gray[gy * cols + gx] = luminance(r, g, b);
       // 4 bits per channel: distinct enough to separate materials, coarse
       // enough that gradients and dither do not read as authored variety.
@@ -273,11 +284,22 @@ function computeSceneMetrics(png) {
     colorEntropyBits: round(entropy),
     edgeDensity: round(edges / checked),
     dominantColorShare: round(dominant / samples),
+    transparentShare: round(transparent / samples),
     luminanceMean: round(mean),
     luminanceP5: round(p5),
     luminanceP95: round(p95),
     luminanceContrast: round(p95 - p5),
   };
+}
+
+// Two frames with no edges at all are not infinitely far apart, they are the
+// same frame. Dividing into a floor would send an identical pair of flat
+// captures — the empty-render case the metrics exist to catch — to a nonzero
+// distance.
+function edgeEnergyRatioOf(currentEnergy, candidateEnergy) {
+  const floor = 1e-6;
+  if (currentEnergy < floor && candidateEnergy < floor) return 1;
+  return candidateEnergy / Math.max(floor, currentEnergy);
 }
 
 async function orderedPngNames(dir) {
@@ -470,7 +492,7 @@ async function analyzeWorldCrop(id, crop, current, candidate, currentGray, candi
   const diffRatio32 = over32 / total;
   const pixelmatchRatio = mismatched / total;
   const edgeDiffRatio32 = edgeStats.diffOver32 / total;
-  const edgeEnergyRatio = edgeStats.candidateEnergy / Math.max(0.0001, edgeStats.currentEnergy);
+  const edgeEnergyRatio = edgeEnergyRatioOf(edgeStats.currentEnergy, edgeStats.candidateEnergy);
   const parityDistance =
     0.35 * diffRatio32
     + 0.25 * pixelmatchRatio
