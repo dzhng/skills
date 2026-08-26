@@ -433,6 +433,44 @@ check('a hash after multiple paths is rejected as unattributable',
     && /cannot attribute sha256/.test(hashMultiPathContinuation.json.findings[0].detail),
   JSON.stringify(hashMultiPathContinuation.json.findings));
 
+// Same-line claims pair in occurrence order, not in one direction picked for
+// the entire line. The first line has two hashes beside the first path; the
+// second belongs to crop.png and must not disappear.
+const HASH_TWO_HASHES_BETWEEN_PATHS = `# Visual critique
+
+shot.png ${SHOT_SHA} ${SHOT_SHA} crop.png
+`;
+const hashTwoHashesBetweenPaths = await judge('hash-two-hashes-between-paths', HASH_TWO_HASHES_BETWEEN_PATHS);
+check('two hashes between paths flag the false second artifact claim',
+  hashTwoHashesBetweenPaths.code === 1
+    && hashTwoHashesBetweenPaths.json.findings.length === 1
+    && hashTwoHashesBetweenPaths.json.findings[0].claim === 'crop.png',
+  JSON.stringify(hashTwoHashesBetweenPaths.json.findings));
+
+// One pair starts hash-first and the next path-first. Equal occurrence counts
+// make their mapping unambiguous even though no single line direction fits.
+const HASH_MIXED_ORIENTATION = `# Visual critique
+
+${SHOT_SHA} shot.png crop.png ${CROP_SHA}
+`;
+const hashMixedOrientation = await judge('hash-mixed-orientation', HASH_MIXED_ORIENTATION);
+check('mixed hash-first and path-first pairs pass in occurrence order',
+  hashMixedOrientation.code === 0, JSON.stringify(hashMixedOrientation.json.findings));
+
+// A multi-path line that already has an ambiguous hash still cannot make its
+// following bare hash disappear. The continuation must be named explicitly.
+const HASH_MULTI_PATH_HASHED_CONTINUATION = `# Visual critique
+
+shot.png ${SHOT_SHA} crop.png
+${WRONG_SHA}
+`;
+const hashMultiPathHashedContinuation = await judge('hash-multi-path-hashed-continuation', HASH_MULTI_PATH_HASHED_CONTINUATION);
+check('a hash continuation after a hashed multi-path line is unattributable',
+  hashMultiPathHashedContinuation.code === 1
+    && hashMultiPathHashedContinuation.json.findings.some((f) =>
+      f.line === 4 && /cannot attribute sha256/.test(f.detail)),
+  JSON.stringify(hashMultiPathHashedContinuation.json.findings));
+
 // Negative control for the artifact half: naming a file that is really there,
 // with no hash claimed, must stay silent. A checker that flags every path is
 // as useless as one that flags none.

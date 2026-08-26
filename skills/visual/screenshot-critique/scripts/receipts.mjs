@@ -240,11 +240,10 @@ function resolveArtifact(path, baseDir) {
   return isAbsolute(path) ? path : resolve(baseDir, path);
 }
 
-// Associate every same-line SHA-256 with its neighboring artifact. A normal
-// `shasum` line starts with a hash and pairs forward; prose starts with a path
-// and pairs backward. This ordered pairing works through tables and tabs,
-// where equal separators make a distance tie ambiguous. A hash-only line
-// immediately after one path is also a claim about that path.
+// Pair same-line paths and SHA-256 claims by occurrence order when their
+// counts agree. That preserves both `shasum` (`hash path`) and prose (`path
+// hash`), including a line that mixes the two orientations. Unequal runs are
+// ambiguous and fail closed rather than lending a hash to the wrong artifact.
 function statedHashes(lines, sitesByLine) {
   const claimsBySite = new Map();
   const findings = [];
@@ -255,25 +254,36 @@ function statedHashes(lines, sitesByLine) {
   for (let i = 0; i < lines.length; i++) {
     const sites = sitesByLine.get(i) ?? [];
     const hashes = [...lines[i].matchAll(SHA256_ALL)];
-    const pathFirst = sites[0]?.column < hashes[0]?.index;
-    for (const hash of hashes) {
-      const hashEnd = hash.index + hash[0].length;
-      const before = sites.filter((site) => site.end <= hash.index).at(-1);
-      const after = sites.find((site) => hashEnd <= site.column);
-      const paired = pathFirst ? before ?? after : after ?? before;
-      if (paired) claimsBySite.get(paired).push(hash[1].toLowerCase());
+    if (sites.length > 0 && hashes.length > 0) {
+      if (sites.length === hashes.length) {
+        for (let j = 0; j < sites.length; j++) {
+          claimsBySite.get(sites[j]).push(hashes[j][1].toLowerCase());
+        }
+      } else {
+        for (const hash of hashes) {
+          findings.push({
+            kind: 'artifact',
+            line: i + 1,
+            column: hash.index + 1,
+            claim: `sha256 ${hash[1]}`,
+            detail: `cannot attribute sha256 one-to-one across artifact paths: ${sites.map((site) => site.claimed).join(', ')}`,
+            text: lines[i].trim(),
+          });
+        }
+      }
     }
 
     const nextSites = sitesByLine.get(i + 1) ?? [];
     const nextHashes = [...(lines[i + 1] ?? '').matchAll(SHA256_ALL)];
     // Do not borrow a `shasum` output hash for a path named in its command:
     // the output line has its own artifact path. A hash-only continuation is
-    // unambiguous only when the preceding line named one artifact.
-    if (sites.length === 1 && hashes.length === 0 && nextSites.length === 0) {
+    // unambiguous only when the preceding line named one artifact. It remains
+    // that artifact's claim even when another hash was stated on that line.
+    if (sites.length === 1 && nextSites.length === 0) {
       for (const hash of nextHashes) {
         claimsBySite.get(sites[0]).push(hash[1].toLowerCase());
       }
-    } else if (sites.length > 1 && hashes.length === 0 && nextSites.length === 0) {
+    } else if (sites.length > 1 && nextSites.length === 0) {
       for (const hash of nextHashes) {
         findings.push({
           kind: 'artifact',
