@@ -337,6 +337,55 @@ const hashTwoOnALine = await judge('hash-two-on-a-line', HASH_TWO_ON_A_LINE);
 check('two files and two hashes on one line each keep their own',
   hashTwoOnALine.code === 0, JSON.stringify(hashTwoOnALine.json.findings));
 
+// A matching repeat does not make a false SHA claim disappear. Both orders
+// matter: judging a path by whether *any* of its hashes is true launders one
+// of these reports.
+const HASH_FALSE_THEN_TRUE = `# Visual critique
+
+The frame is shot.png, sha256 ${WRONG_SHA}.
+The same frame is shot.png, sha256 ${SHOT_SHA}.
+`;
+const hashFalseThenTrue = await judge('hash-false-then-true', HASH_FALSE_THEN_TRUE);
+check('a false hash followed by a true repeat is flagged',
+  hashFalseThenTrue.code === 1
+    && hashFalseThenTrue.json.findings.filter((f) => f.kind === 'artifact').length === 1,
+  JSON.stringify(hashFalseThenTrue.json.findings));
+
+const HASH_TRUE_THEN_FALSE = `# Visual critique
+
+The frame is shot.png, sha256 ${SHOT_SHA}.
+The same frame is shot.png, sha256 ${WRONG_SHA}.
+`;
+const hashTrueThenFalse = await judge('hash-true-then-false', HASH_TRUE_THEN_FALSE);
+check('a true hash followed by a false repeat is flagged',
+  hashTrueThenFalse.code === 1
+    && hashTrueThenFalse.json.findings.filter((f) => f.kind === 'artifact').length === 1,
+  JSON.stringify(hashTrueThenFalse.json.findings));
+
+const HASH_REPEATED_CORRECT = `# Visual critique
+
+The frame is shot.png, sha256 ${SHOT_SHA}.
+The same frame is shot.png, sha256 ${SHOT_SHA}.
+`;
+const hashRepeatedCorrect = await judge('hash-repeated-correct', HASH_REPEATED_CORRECT);
+check('repeated correct hashes pass',
+  hashRepeatedCorrect.code === 0, JSON.stringify(hashRepeatedCorrect.json.findings));
+
+// The command names both inputs, while its output repeats each with the hash
+// that belongs to it. Command paths must not inherit hashes from output paths.
+const HASH_MULTI_FILE_COMMAND_OUTPUT = `# Visual critique
+
+\`\`\`
+$ shasum -a 256 shot.png crop.png
+${SHOT_SHA}  shot.png
+${CROP_SHA}  crop.png
+\`\`\`
+`;
+const hashMultiFileCommandOutput = await judge('hash-multi-file-command-output', HASH_MULTI_FILE_COMMAND_OUTPUT);
+check('multi-file command and output keep each hash with its output path',
+  hashMultiFileCommandOutput.code === 0,
+  JSON.stringify(hashMultiFileCommandOutput.json.findings));
+
 // Negative control for the artifact half: naming a file that is really there,
 // with no hash claimed, must stay silent. A checker that flags every path is
 // as useless as one that flags none.

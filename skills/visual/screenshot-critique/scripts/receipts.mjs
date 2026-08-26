@@ -240,45 +240,71 @@ function resolveArtifact(path, baseDir) {
   return isAbsolute(path) ? path : resolve(baseDir, path);
 }
 
-// The hash stated for the path at [start, end) on line `i`, or null.
-//
-// Both sides are read and the nearer one wins, so a line that pairs two files
-// with two hashes still gives each path the hash written against it. The
-// forward scope keeps the following line — a shasum block prints the pair on
-// its own line — while the backward scope stays on this line, because a hash
-// on the line above generally belongs to the artifact named up there.
-function statedHash(lines, i, start, end) {
-  const line = lines[i];
-  const before = line.slice(0, start);
-  const after = `${line.slice(end)} ${lines[i + 1] ?? ''}`;
+// Associate every same-line SHA-256 with the artifact nearest to it. A normal
+// `shasum` line is hash then path; prose often writes path then hash. Assigning
+// hashes, rather than asking each path for one nearest hash, keeps a line with
+// several files from lending one file's hash to another. A hash-only line
+// immediately after one path is also a claim about that path.
+function statedHashes(lines, sitesByLine) {
+  const claimsBySite = new Map();
+  for (const sites of sitesByLine.values()) {
+    for (const site of sites) claimsBySite.set(site, []);
+  }
 
-  let left = null;
-  for (const m of before.matchAll(SHA256_ALL)) left = m;
-  const right = SHA256.exec(after);
+  for (let i = 0; i < lines.length; i++) {
+    const sites = sitesByLine.get(i) ?? [];
+    const hashes = [...lines[i].matchAll(SHA256_ALL)];
+    for (const hash of hashes) {
+      const hashEnd = hash.index + hash[0].length;
+      let nearest = null;
+      let nearestGap = Infinity;
+      for (const site of sites) {
+        const gap = hashEnd <= site.column
+          ? site.column - hashEnd
+          : site.end <= hash.index
+            ? hash.index - site.end
+            : 0;
+        // Between two paths, a hash starts the next `hash  path` pair.
+        const siteFollowsHash = hashEnd <= site.column;
+        const nearestPrecedesHash = nearest && nearest.end <= hash.index;
+        if (gap < nearestGap || (gap === nearestGap && siteFollowsHash && nearestPrecedesHash)) {
+          nearest = site;
+          nearestGap = gap;
+        }
+      }
+      if (nearest) claimsBySite.get(nearest).push(hash[1].toLowerCase());
+    }
 
-  if (!left) return right ? right[1] : null;
-  if (!right) return left[1];
-  const leftGap = before.length - (left.index + left[0].length);
-  return leftGap <= right.index ? left[1] : right[1];
+    // Do not borrow a `shasum` output hash for a path named in its command:
+    // the output line has its own artifact path. A hash-only continuation is
+    // unambiguous only when the preceding line named one artifact.
+    if (sites.length === 1 && hashes.length === 0 && !(sitesByLine.get(i + 1)?.length)) {
+      for (const hash of (lines[i + 1] ?? '').matchAll(SHA256_ALL)) {
+        claimsBySite.get(sites[0]).push(hash[1].toLowerCase());
+      }
+    }
+  }
+  return claimsBySite;
 }
 
 function checkArtifacts(lines, baseDir) {
-  // A path is judged once, over all of its occurrences. A report names the
-  // same file in the command it ran and again in the output that came back,
-  // and `shasum -a 256 a.png b.png` prints one line per file, so the hash
-  // sitting beside one occurrence is not the hash sitting beside another. The
-  // claim is that the file is this file: it holds if any hash stated for the
-  // path is the file's own, and fails when every stated hash is something
-  // else.
+  // Paths are grouped for the filesystem lookup, but every hash statement is
+  // retained at the occurrence where it was made. A true repeat never erases
+  // an earlier false claim about the same file.
   const findings = [];
   const occurrences = new Map();
+  const sitesByLine = new Map();
   for (let i = 0; i < lines.length; i++) {
     for (const match of lines[i].matchAll(ARTIFACT)) {
       const claimed = match[1];
       if (!occurrences.has(claimed)) occurrences.set(claimed, []);
-      occurrences.get(claimed).push({ line: i, column: match.index });
+      const site = { line: i, column: match.index, end: match.index + claimed.length };
+      occurrences.get(claimed).push(site);
+      if (!sitesByLine.has(i)) sitesByLine.set(i, []);
+      sitesByLine.get(i).push(site);
     }
   }
+  const claimsBySite = statedHashes(lines, sitesByLine);
 
   for (const [claimed, sites] of occurrences) {
     const full = resolveArtifact(claimed, baseDir);
@@ -301,29 +327,20 @@ function checkArtifacts(lines, baseDir) {
       continue;
     }
 
-    // A hash stated beside the path is a claim about which file this is.
-    // Recompute it. Reports write the pair both ways round — `crop.png
-    // sha256 abc…` and `sha256 abc…  crop.png`, the latter being what shasum
-    // itself prints — so a hash before the path counts as much as one after.
-    const claims = [];
-    for (const site of sites) {
-      const stated = statedHash(lines, site.line, site.column, site.column + claimed.length);
-      if (stated) claims.push({ site, stated: stated.toLowerCase() });
-    }
-    if (claims.length === 0) continue;
-
     const actual = createHash('sha256').update(readFileSync(full)).digest('hex');
-    if (claims.some((claim) => claim.stated === actual)) continue;
-
-    const { site, stated } = claims[0];
-    findings.push({
-      kind: 'artifact',
-      line: site.line + 1,
-      column: site.column + 1,
-      claim: claimed,
-      detail: `sha256 is ${actual.slice(0, 16)}…, report says ${stated.slice(0, 16)}…`,
-      text: lines[site.line].trim(),
-    });
+    for (const site of sites) {
+      for (const stated of claimsBySite.get(site)) {
+        if (stated === actual) continue;
+        findings.push({
+          kind: 'artifact',
+          line: site.line + 1,
+          column: site.column + 1,
+          claim: claimed,
+          detail: `sha256 is ${actual.slice(0, 16)}…, report says ${stated.slice(0, 16)}…`,
+          text: lines[site.line].trim(),
+        });
+      }
+    }
   }
   return findings;
 }
