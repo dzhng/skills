@@ -27,10 +27,13 @@ any content in it at all.
    contrast, ground-plane perspective, flag/pole attachment, label style and
    icon readability, blur, scale, lighting, artifacts, missing models, terrain
    feature readability, roads, water, and overall scan readability.
-5. Compare the sub-agent's critique against your own inspection. Treat overlap
+5. Run the returned critique through `scripts/receipts.mjs`. Every number it
+   flags is a claim the critique cannot support; strike those claims or
+   re-measure them yourself before any of them reach a decision.
+6. Compare the sub-agent's critique against your own inspection. Treat overlap
    as high-priority evidence. Treat novel high-confidence findings as bugs to
    inspect, not as taste notes to dismiss.
-6. Record actionable findings in the spec, visual report, or next task plan
+7. Record actionable findings in the spec, visual report, or next task plan
    before claiming the screenshot is accepted.
 
 ## Sub-Agent Prompt
@@ -48,6 +51,14 @@ missing models, terrain feature readability, roads, water, and scan
 readability. Do not assume these are correct. Return a concise list of issues
 you can see, with confidence and whether the issue is visible in the full image,
 the crop, or both.
+
+Describe what you see in words. You are looking at these images, not measuring
+them, so state no pixel value, luminance, percentage, ratio, count, or offset
+unless you ran a command that produced it and you quote that command and its
+output beside the number. "The hem reads clearly darker than the floor beside
+it" is a finding; "44.0 versus 33.6" without a receipt is a fabrication. The
+same goes for files: name no artifact you did not create with a tool you
+actually have.
 ```
 
 Spawn config:
@@ -56,6 +67,44 @@ Spawn config:
 - `fork_context`: `false`
 - attach screenshots as `local_image` items
 - omit model overrides unless the user explicitly requests one
+- grant a measurement tool whenever you want numbers back — see Receipts
+
+## Receipts
+
+A number in a critique is a **receipt or a guess**, and the two are
+indistinguishable once they are written down. An agent handed images and asked
+for defects will answer in whatever register the question was posed in: ask it
+how much darker the hem is and it returns a luminance mean, because that is
+what the answer is shaped like — not because it measured anything. Sometimes
+the estimate lands close and sometimes it inverts the finding; nothing in the
+report tells you which, and it reads as the strongest evidence there precisely
+because it is numeric. The same reflex names the crops and dumps it says it
+wrote.
+
+- **Match the tool surface to the output contract.** Before spawning, read your
+  own prompt and ask which tool produces each claim you demanded. A judge with
+  images and no shell can report what it sees and nothing else. If you want
+  measurements, grant the tool that measures and name it in the prompt;
+  otherwise stop asking for them.
+- **A number without its command is not a finding.** Every quantity must arrive
+  with the command that produced it and that command's output, close enough to
+  read together. Findings that fail this are struck, not discounted.
+- **Verify, don't trust the eye of the verifier.** Run `scripts/receipts.mjs`
+  over the returned report — `node scripts/receipts.mjs <report.md>` — before
+  you read the findings, so an unsupported number never gets to be persuasive
+  first. It exits nonzero and prints each unbacked quantity with its line.
+  `scripts/receipts.eval.mjs` is its own eval, over reports written in the eval
+  whose right answer is known by construction, both directions pinned: run it
+  after changing the checker, and never widen what counts as a receipt to make
+  a failing case pass.
+- **Ordinal words are still findings; numbers are not.** "Clearly darker",
+  "roughly a third of the panel", "the left edge is cut off" are what an eye can
+  honestly report. Push the critique toward that register rather than trying to
+  make its arithmetic more careful.
+- **The measured pass is a separate run.** When the words justify numbers, take
+  the measurement yourself with `compare-screenshots`, or re-run the critic with
+  a shell and this same receipt rule. Never repair a report by asking its author
+  to double-check its own figures.
 
 ## Rules
 
