@@ -240,13 +240,14 @@ function resolveArtifact(path, baseDir) {
   return isAbsolute(path) ? path : resolve(baseDir, path);
 }
 
-// Associate every same-line SHA-256 with the artifact nearest to it. A normal
-// `shasum` line is hash then path; prose often writes path then hash. Assigning
-// hashes, rather than asking each path for one nearest hash, keeps a line with
-// several files from lending one file's hash to another. A hash-only line
+// Associate every same-line SHA-256 with its neighboring artifact. A normal
+// `shasum` line starts with a hash and pairs forward; prose starts with a path
+// and pairs backward. This ordered pairing works through tables and tabs,
+// where equal separators make a distance tie ambiguous. A hash-only line
 // immediately after one path is also a claim about that path.
 function statedHashes(lines, sitesByLine) {
   const claimsBySite = new Map();
+  const findings = [];
   for (const sites of sitesByLine.values()) {
     for (const site of sites) claimsBySite.set(site, []);
   }
@@ -254,37 +255,38 @@ function statedHashes(lines, sitesByLine) {
   for (let i = 0; i < lines.length; i++) {
     const sites = sitesByLine.get(i) ?? [];
     const hashes = [...lines[i].matchAll(SHA256_ALL)];
+    const pathFirst = sites[0]?.column < hashes[0]?.index;
     for (const hash of hashes) {
       const hashEnd = hash.index + hash[0].length;
-      let nearest = null;
-      let nearestGap = Infinity;
-      for (const site of sites) {
-        const gap = hashEnd <= site.column
-          ? site.column - hashEnd
-          : site.end <= hash.index
-            ? hash.index - site.end
-            : 0;
-        // Between two paths, a hash starts the next `hash  path` pair.
-        const siteFollowsHash = hashEnd <= site.column;
-        const nearestPrecedesHash = nearest && nearest.end <= hash.index;
-        if (gap < nearestGap || (gap === nearestGap && siteFollowsHash && nearestPrecedesHash)) {
-          nearest = site;
-          nearestGap = gap;
-        }
-      }
-      if (nearest) claimsBySite.get(nearest).push(hash[1].toLowerCase());
+      const before = sites.filter((site) => site.end <= hash.index).at(-1);
+      const after = sites.find((site) => hashEnd <= site.column);
+      const paired = pathFirst ? before ?? after : after ?? before;
+      if (paired) claimsBySite.get(paired).push(hash[1].toLowerCase());
     }
 
+    const nextSites = sitesByLine.get(i + 1) ?? [];
+    const nextHashes = [...(lines[i + 1] ?? '').matchAll(SHA256_ALL)];
     // Do not borrow a `shasum` output hash for a path named in its command:
     // the output line has its own artifact path. A hash-only continuation is
     // unambiguous only when the preceding line named one artifact.
-    if (sites.length === 1 && hashes.length === 0 && !(sitesByLine.get(i + 1)?.length)) {
-      for (const hash of (lines[i + 1] ?? '').matchAll(SHA256_ALL)) {
+    if (sites.length === 1 && hashes.length === 0 && nextSites.length === 0) {
+      for (const hash of nextHashes) {
         claimsBySite.get(sites[0]).push(hash[1].toLowerCase());
+      }
+    } else if (sites.length > 1 && hashes.length === 0 && nextSites.length === 0) {
+      for (const hash of nextHashes) {
+        findings.push({
+          kind: 'artifact',
+          line: i + 2,
+          column: hash.index + 1,
+          claim: `sha256 ${hash[1]}`,
+          detail: `cannot attribute sha256 to one artifact: ${sites.map((site) => site.claimed).join(', ')}`,
+          text: lines[i + 1].trim(),
+        });
       }
     }
   }
-  return claimsBySite;
+  return { claimsBySite, findings };
 }
 
 function checkArtifacts(lines, baseDir) {
@@ -298,13 +300,14 @@ function checkArtifacts(lines, baseDir) {
     for (const match of lines[i].matchAll(ARTIFACT)) {
       const claimed = match[1];
       if (!occurrences.has(claimed)) occurrences.set(claimed, []);
-      const site = { line: i, column: match.index, end: match.index + claimed.length };
+      const site = { line: i, column: match.index, end: match.index + claimed.length, claimed };
       occurrences.get(claimed).push(site);
       if (!sitesByLine.has(i)) sitesByLine.set(i, []);
       sitesByLine.get(i).push(site);
     }
   }
-  const claimsBySite = statedHashes(lines, sitesByLine);
+  const { claimsBySite, findings: hashFindings } = statedHashes(lines, sitesByLine);
+  findings.push(...hashFindings);
 
   for (const [claimed, sites] of occurrences) {
     const full = resolveArtifact(claimed, baseDir);

@@ -386,6 +386,53 @@ check('multi-file command and output keep each hash with its output path',
   hashMultiFileCommandOutput.code === 0,
   JSON.stringify(hashMultiFileCommandOutput.json.findings));
 
+// Ordered pairs must work in both directions. Path-first prose does not have
+// the hash-first ordering `shasum` emits, even when table pipes or tabs make
+// every neighboring distance identical.
+const HASH_PATH_FIRST_TWO_FILES = `# Visual critique
+
+shot.png sha256 ${SHOT_SHA} crop.png sha256 ${CROP_SHA}
+`;
+const hashPathFirstTwoFiles = await judge('hash-path-first-two-files', HASH_PATH_FIRST_TWO_FILES);
+check('path-first same-line pairs keep each hash with its path',
+  hashPathFirstTwoFiles.code === 0, JSON.stringify(hashPathFirstTwoFiles.json.findings));
+
+const HASH_PATH_FIRST_TAB = `# Visual critique
+
+shot.png\t${CROP_SHA}\tcrop.png\t${CROP_SHA}
+`;
+const hashPathFirstTab = await judge('hash-path-first-tab', HASH_PATH_FIRST_TAB);
+check('a tab-separated path-first false hash is flagged on its own path',
+  hashPathFirstTab.code === 1
+    && hashPathFirstTab.json.findings.length === 1
+    && hashPathFirstTab.json.findings[0].claim === 'shot.png',
+  JSON.stringify(hashPathFirstTab.json.findings));
+
+const HASH_PATH_FIRST_TABLE = `# Visual critique
+
+| shot.png | ${CROP_SHA} | crop.png | ${CROP_SHA} |
+`;
+const hashPathFirstTable = await judge('hash-path-first-table', HASH_PATH_FIRST_TABLE);
+check('a table path-first false hash is flagged on its own path',
+  hashPathFirstTable.code === 1
+    && hashPathFirstTable.json.findings.length === 1
+    && hashPathFirstTable.json.findings[0].claim === 'shot.png',
+  JSON.stringify(hashPathFirstTable.json.findings));
+
+// One following hash after multiple paths has no defensible owner. It must
+// fail instead of being silently attached to an arbitrary file or discarded.
+const HASH_MULTI_PATH_CONTINUATION = `# Visual critique
+
+Wrote crops to shot.png and crop.png.
+${WRONG_SHA}
+`;
+const hashMultiPathContinuation = await judge('hash-multi-path-continuation', HASH_MULTI_PATH_CONTINUATION);
+check('a hash after multiple paths is rejected as unattributable',
+  hashMultiPathContinuation.code === 1
+    && hashMultiPathContinuation.json.findings.length === 1
+    && /cannot attribute sha256/.test(hashMultiPathContinuation.json.findings[0].detail),
+  JSON.stringify(hashMultiPathContinuation.json.findings));
+
 // Negative control for the artifact half: naming a file that is really there,
 // with no hash claimed, must stay silent. A checker that flags every path is
 // as useless as one that flags none.
