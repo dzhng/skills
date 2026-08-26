@@ -1,32 +1,45 @@
 #!/usr/bin/env node
-// Strike unsupported quantities out of a critique.
+// Strike unsupported quantities and invented artifacts out of a critique.
 //
 // A judge given images and no shell answers a numeric question numerically:
 // the luminance means, the symmetry percentages, and the crop files it says it
 // wrote all arrive together, self-consistent and invented. This reads the
-// report back and asks, of every number that claims to be a measurement,
-// whether the report also carries the command that produced it.
+// report back and asks two questions of it.
+//
+// Of every number presented as a measurement: does the report show a command
+// that ran, and does that command's output contain this number? That is an
+// attribution check, and attribution is necessary rather than sufficient — a
+// report that invents a whole transcript, command and output together, passes
+// it. Nothing readable from static text can tell an invented transcript from a
+// real one, so this does not claim to.
+//
+// Of every file the report names: is it there, and is it the file the report
+// says it is? That one is not a matter of reading — the path is resolved on
+// disk, and a stated sha256 is recomputed. Fabricated crops and dumps die
+// here, which is the half of the check that touches the world.
 //
 //   node receipts.mjs <report.md> [...]      # human summary, nonzero if unbacked
 //   node receipts.mjs --json <report.md>     # machine-readable findings
 //   node receipts.mjs --label <report.md>    # annotated copy on stdout
+//   node receipts.mjs --base DIR <report.md> # resolve relative paths from DIR
 //   cat report.md | node receipts.mjs -      # read stdin
-//
-// A receipt is a fenced code block, an indented block, or an inline `$ cmd`
-// line that both runs something and shows its output. A quantity counts as
-// backed when it appears inside a receipt, or in prose within a few lines of
-// one whose output contains that same quantity — which is what "quote the
-// command and its output beside the number" looks like on the page.
 
 import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { statSync, readFileSync } from 'node:fs';
+import { dirname, isAbsolute, resolve } from 'node:path';
 
-const HELP = `receipts.mjs — reject quantitative claims a critique cannot support
+const HELP = `receipts.mjs — reject claims a critique cannot support
 
-  node receipts.mjs [--json|--label] [--window N] <report.md> [...]
+  node receipts.mjs [--json|--label] [--window N] [--base DIR] <report.md> [...]
   node receipts.mjs -            read the report from stdin
 
-Exit code 0 when every measurement claim carries its command and output,
-1 when any claim does not, 2 on a usage or read error.`;
+Numbers are checked for attribution: a command shown running, with this number
+in its output. Files are checked against the filesystem, and against the sha256
+the report states for them if it states one.
+
+Exit code 0 when every claim holds, 1 when any does not, 2 on a usage or read
+error.`;
 
 // A "measurement claim" is a number the report presents as read off the
 // image. Bare ordinals, dates, and dimensions people legitimately eyeball are
@@ -57,6 +70,13 @@ const NUMBER = /(?<![\w.$#-])(\d+(?:\.\d+)?)\s*(%|px|pt|dp|em|rem)?(?![\w-])/g;
 // the `0` in `0x60`.
 const HEX = /(?<![\w])(0x[0-9a-f]{2,8}|#[0-9a-f]{3,8})(?![\w])/gi;
 
+// Files a critique claims to have produced or read: crops, dumps, frames,
+// tables. The extension list is deliberately narrow — a report mentioning a
+// script or a module name is not claiming an artifact.
+const ARTIFACT = /(?<![\w@/-])((?:\.{1,2}\/|~\/|\/)?[\w.-]+(?:\/[\w.-]+)*\.(?:png|jpe?g|gif|webp|bmp|tiff?|pdf|csv|tsv|json|ndjson|txt|npy))(?![\w])/gi;
+
+const SHA256 = /\b(?:sha-?256[\s:=]*)?([0-9a-f]{64})\b/i;
+
 const argv = process.argv.slice(2);
 if (argv.length === 0 || argv.includes('--help') || argv.includes('-h')) {
   console.log(HELP);
@@ -66,12 +86,14 @@ if (argv.length === 0 || argv.includes('--help') || argv.includes('-h')) {
 let asJson = false;
 let asLabel = false;
 let window = 4;
+let base = null;
 const targets = [];
 for (let i = 0; i < argv.length; i++) {
   const arg = argv[i];
   if (arg === '--json') asJson = true;
   else if (arg === '--label') asLabel = true;
   else if (arg === '--window') window = Number.parseInt(argv[++i], 10);
+  else if (arg === '--base') base = argv[++i];
   else if (arg.startsWith('--')) {
     console.error(`receipts.mjs: unknown option ${arg}\n\n${HELP}`);
     process.exit(2);
@@ -79,6 +101,10 @@ for (let i = 0; i < argv.length; i++) {
 }
 if (!Number.isFinite(window) || window < 0) {
   console.error('receipts.mjs: --window needs a non-negative integer');
+  process.exit(2);
+}
+if (base !== null && base === undefined) {
+  console.error('receipts.mjs: --base needs a directory');
   process.exit(2);
 }
 if (targets.length === 0) {
@@ -89,9 +115,7 @@ if (targets.length === 0) {
 // --- receipts -------------------------------------------------------------
 
 // Lines that belong to a fenced block, an indented block, or a `$ cmd` shell
-// transcript. Both the command and whatever it printed count as receipt text:
-// a number is backed by appearing in the output, not by sitting next to a
-// command that was never run.
+// transcript.
 function receiptLines(lines) {
   const inReceipt = new Array(lines.length).fill(false);
   let fence = null;
@@ -133,14 +157,42 @@ function receiptLines(lines) {
   return inReceipt;
 }
 
-// A receipt has to actually run something. A fenced block holding only prose
-// is not evidence, and treating it as evidence is how a fabricated report
-// launders itself: paste the invented numbers into a code fence and they read
-// as output.
-const COMMAND_SHAPE = /(^|\s)(\$\s+\S|[.\/~]?[\w./-]*\b(node|python3?|magick|convert|ffmpeg|identify|compare|sips|exiftool|jq|awk|sed|grep|rg|cat|head|tail|ls|wc|printf|echo|uv|npx|pnpm|deno|bash|sh|zsh)\b)/;
+const TOOLS = new Set([
+  'node', 'python', 'python3', 'magick', 'convert', 'ffmpeg', 'ffprobe',
+  'identify', 'compare', 'sips', 'exiftool', 'jq', 'awk', 'sed', 'grep', 'rg',
+  'cat', 'head', 'tail', 'ls', 'wc', 'printf', 'echo', 'uv', 'uvx', 'npx',
+  'pnpm', 'deno', 'bun', 'bash', 'sh', 'zsh', 'sha256sum', 'shasum', 'stat',
+  'file', 'du', 'find', 'sort', 'uniq', 'cut', 'tr', 'xxd', 'od',
+]);
 
-function isCommandLine(line) {
-  return COMMAND_SHAPE.test(line);
+// A token that reads as an argument rather than as English: a flag, a path, a
+// filename, a key=value, a format string, an ImageMagick sink like `info:`.
+function looksLikeArgument(token) {
+  if (token.startsWith('-')) return true;
+  if (token.includes('/') || token.includes('\\')) return true;
+  if (/\.\w{1,6}$/.test(token)) return true;
+  if (token.includes('=')) return true;
+  if (/^['"]/.test(token) || token.includes('%[') || token.includes('{')) return true;
+  if (/^\w+:$/.test(token)) return true;
+  if (/^[$@]/.test(token)) return true;
+  return false;
+}
+
+// A receipt has to actually run something, and running something has a shape:
+// an executable followed by at least one argument. This is the line that
+// separates a transcript from prose wearing a code fence — the laundering
+// move is to paste invented numbers under a sentence that merely contains the
+// word `python3`, and a sentence has no arguments in it.
+function isInvocation(line) {
+  const stripped = line.replace(/^\s*[$>]\s+/, '').trim();
+  if (stripped === '') return false;
+  const tokens = stripped.split(/\s+/);
+  const head = tokens[0].replace(/^.*\//, '');
+  const runnable = TOOLS.has(head)
+    || /^\.{0,2}\//.test(tokens[0])
+    || /^\w[\w.-]*\.(?:mjs|js|py|sh)$/.test(head);
+  if (!runnable) return false;
+  return tokens.slice(1).some(looksLikeArgument);
 }
 
 // --- claims ---------------------------------------------------------------
@@ -177,9 +229,66 @@ function claimsIn(line, previous = '') {
   return hits;
 }
 
+// --- artifacts ------------------------------------------------------------
+
+function resolveArtifact(path, baseDir) {
+  if (path.startsWith('~/')) {
+    const home = process.env.HOME ?? process.env.USERPROFILE;
+    return home ? resolve(home, path.slice(2)) : path;
+  }
+  return isAbsolute(path) ? path : resolve(baseDir, path);
+}
+
+function checkArtifacts(lines, baseDir) {
+  const findings = [];
+  const seen = new Set();
+  for (let i = 0; i < lines.length; i++) {
+    for (const match of lines[i].matchAll(ARTIFACT)) {
+      const claimed = match[1];
+      if (seen.has(claimed)) continue;
+      seen.add(claimed);
+      const full = resolveArtifact(claimed, baseDir);
+      let exists = false;
+      try {
+        exists = statSync(full).isFile();
+      } catch {
+        exists = false;
+      }
+      if (!exists) {
+        findings.push({
+          kind: 'artifact',
+          line: i + 1,
+          column: match.index + 1,
+          claim: claimed,
+          detail: 'no such file',
+          text: lines[i].trim(),
+        });
+        continue;
+      }
+      // A hash stated on the same line, or the line under it, is a claim about
+      // which file this is. Recompute it.
+      const scope = `${lines[i]} ${lines[i + 1] ?? ''}`;
+      const stated = SHA256.exec(scope.slice(match.index + claimed.length));
+      if (!stated) continue;
+      const actual = createHash('sha256').update(readFileSync(full)).digest('hex');
+      if (actual !== stated[1].toLowerCase()) {
+        findings.push({
+          kind: 'artifact',
+          line: i + 1,
+          column: match.index + 1,
+          claim: claimed,
+          detail: `sha256 is ${actual.slice(0, 16)}…, report says ${stated[1].slice(0, 16)}…`,
+          text: lines[i].trim(),
+        });
+      }
+    }
+  }
+  return findings;
+}
+
 // --- analysis -------------------------------------------------------------
 
-function analyse(source, text) {
+function analyse(source, text, baseDir) {
   const lines = text.split('\n');
   const inReceipt = receiptLines(lines);
   const receiptRuns = [];
@@ -188,11 +297,19 @@ function analyse(source, text) {
     const start = i;
     while (i < lines.length && inReceipt[i]) i++;
     const body = lines.slice(start, i);
+    const commands = body.filter(isInvocation);
+    // Output is what the block holds that is not the command and not a fence.
+    const output = body.filter((line) =>
+      !isInvocation(line) && line.trim() !== '' && !/^\s*(`{3,}|~{3,})/.test(line));
     receiptRuns.push({
       start,
       end: i - 1,
-      ran: body.some(isCommandLine),
-      numbers: new Set(body.flatMap((line) => [
+      // Both halves are required. A command with nothing under it shows an
+      // intention, not a result; output with no command is the laundering
+      // move. Numbers come from the output alone, so a value typed into the
+      // command line cannot vouch for itself.
+      ran: commands.length > 0 && output.length > 0,
+      numbers: new Set(output.flatMap((line) => [
         ...[...line.matchAll(NUMBER)].map((m) => m[1]),
         ...[...line.matchAll(HEX)].map((m) => m[1].toLowerCase()),
       ])),
@@ -210,6 +327,7 @@ function analyse(source, text) {
         && i <= run.end + window + 1);
       if (backing) continue;
       findings.push({
+        kind: 'quantity',
         source,
         line: i + 1,
         column: claim.column,
@@ -218,6 +336,10 @@ function analyse(source, text) {
       });
     }
   }
+  for (const finding of checkArtifacts(lines, baseDir)) {
+    findings.push({ source, ...finding });
+  }
+  findings.sort((a, b) => a.line - b.line || a.column - b.column);
   return { lines, findings, receipts: receiptRuns.filter((r) => r.ran).length };
 }
 
@@ -241,7 +363,8 @@ for (const target of targets) {
     console.error(`receipts.mjs: cannot read ${target}: ${error.message}`);
     process.exit(2);
   }
-  reports.push(analyse(target === '-' ? '<stdin>' : target, text));
+  const baseDir = base ?? (target === '-' ? process.cwd() : dirname(resolve(target)));
+  reports.push(analyse(target === '-' ? '<stdin>' : target, text, baseDir));
 }
 
 const findings = reports.flatMap((r) => r.findings);
@@ -266,11 +389,16 @@ if (asLabel) {
   }, null, 2));
 } else if (findings.length === 0) {
   const receipts = reports.reduce((sum, r) => sum + r.receipts, 0);
-  console.log(`receipts: ok — no unsupported quantities (${receipts} receipt${receipts === 1 ? '' : 's'} found)`);
+  console.log(`receipts: ok — every quantity is attributed and every file is there (${receipts} receipt${receipts === 1 ? '' : 's'} found)`);
 } else {
-  console.log(`receipts: ${findings.length} unsupported quantit${findings.length === 1 ? 'y' : 'ies'} — strike or re-measure before these reach a decision\n`);
+  const quantities = findings.filter((f) => f.kind === 'quantity').length;
+  const artifacts = findings.length - quantities;
+  const parts = [];
+  if (quantities) parts.push(`${quantities} unsupported quantit${quantities === 1 ? 'y' : 'ies'}`);
+  if (artifacts) parts.push(`${artifacts} file claim${artifacts === 1 ? '' : 's'} that do not hold`);
+  console.log(`receipts: ${parts.join(', ')} — strike or re-measure before these reach a decision\n`);
   for (const f of findings) {
-    console.log(`  ${f.source}:${f.line}:${f.column}  ${f.claim}`);
+    console.log(`  ${f.source}:${f.line}:${f.column}  ${f.claim}${f.detail ? ` — ${f.detail}` : ''}`);
     console.log(`    ${f.text}`);
   }
 }

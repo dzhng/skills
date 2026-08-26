@@ -15,6 +15,7 @@
 import { spawn } from 'node:child_process';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
+import { createHash } from 'node:crypto';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -25,6 +26,19 @@ const checks = [];
 const check = (name, pass, detail = '') => checks.push({ name, pass, detail });
 
 const workspace = await mkdtemp(resolve(tmpdir(), 'receipts-eval-'));
+
+// A real 1x1 PNG. The reports below name it the way a critique names the shot
+// it measured, and the checker resolves that name on disk — so the file has to
+// be there for the honest fixtures to pass, and its hash has to be the hash
+// they state.
+const SHOT = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmM'
+  + 'IQAAAABJRU5ErkJggg==',
+  'base64',
+);
+await writeFile(resolve(workspace, 'shot.png'), SHOT);
+const SHOT_SHA = createHash('sha256').update(SHOT).digest('hex');
+const WRONG_SHA = 'f'.repeat(64);
 
 function run(args, stdin = null) {
   return new Promise((done) => {
@@ -67,7 +81,8 @@ const FABRICATED = `# Visual critique
 2. Left/right symmetry is 96% — the silhouette is effectively mirrored.
 3. The hem sits 12px above the floor plane.
 
-I wrote crops to /tmp/crop-hem.png and /tmp/crop-far.png for reference.
+I wrote crops to /tmp/receipts-eval-no-such-crop-hem.png and
+/tmp/receipts-eval-no-such-crop-far.png for reference.
 `;
 
 // The same critique from an agent that had a shell, quoting what it ran.
@@ -203,6 +218,90 @@ Confidence: high on findings 1 and 2, medium on 3.
 const ordinary = await judge('ordinary', ORDINARY);
 check('ordinary prose numbers are not flagged', ordinary.code === 0,
   JSON.stringify(ordinary.json.findings));
+
+// --- laundering, second form ---------------------------------------------
+// The first laundering fixture pastes numbers into a fence with no command at
+// all. This one is the move that beats a checker looking for a command *word*:
+// the fence holds a sentence with `python3` in it. A sentence has no arguments
+// in it, which is the difference the checker reads.
+const LAUNDERED_COMMAND = `# Visual critique
+
+\`\`\`text
+python3 measured the image and reported the region means below
+hem  mean_luminance 44.0
+far  mean_luminance 44.0
+\`\`\`
+
+Mean luminance under the hem is 44.0 against 44.0 in the far field.
+`;
+const launderedCommand = await judge('laundered-command', LAUNDERED_COMMAND);
+check('a command word in prose is not a receipt',
+  launderedCommand.code === 1
+    && launderedCommand.json.findings.some((f) => f.kind === 'quantity'),
+  `code=${launderedCommand.code} findings=${JSON.stringify(launderedCommand.json.findings)}`);
+check('the laundering fence counts as no receipt at all',
+  launderedCommand.json.receipts === 0,
+  `receipts=${launderedCommand.json.receipts}`);
+
+// The same block with a real invocation in it passes, so the rule above
+// discriminates rather than rejecting fences wholesale.
+const COMMAND_WITH_ARGS = `# Visual critique
+
+\`\`\`text
+$ python3 measure.py shot.png --regions hem far
+hem  mean_luminance 44.0
+far  mean_luminance 44.0
+\`\`\`
+
+Mean luminance under the hem is 44.0 against 44.0 in the far field.
+`;
+const commandWithArgs = await judge('command-with-args', COMMAND_WITH_ARGS);
+check('an invocation with arguments still counts as a receipt',
+  commandWithArgs.code === 0, JSON.stringify(commandWithArgs.json.findings));
+
+// --- artifacts ------------------------------------------------------------
+// The crops a fabricating critic says it wrote are the one claim that can be
+// settled against the world rather than against the page.
+const fabricatedArtifacts = fabricated.json.findings.filter((f) => f.kind === 'artifact');
+check('crops the report never wrote are flagged',
+  fabricatedArtifacts.length === 2
+    && fabricatedArtifacts.every((f) => f.detail === 'no such file'),
+  JSON.stringify(fabricatedArtifacts));
+
+const HASH_OK = `# Visual critique
+
+\`\`\`
+$ shasum -a 256 shot.png
+${SHOT_SHA}  shot.png
+\`\`\`
+
+The frame under review is shot.png, sha256 ${SHOT_SHA}.
+`;
+const hashOk = await judge('hash-ok', HASH_OK);
+check('a file that is there, with the hash it claims, passes',
+  hashOk.code === 0, JSON.stringify(hashOk.json.findings));
+
+const HASH_WRONG = `# Visual critique
+
+The frame under review is shot.png, sha256 ${WRONG_SHA}.
+`;
+const hashWrong = await judge('hash-wrong', HASH_WRONG);
+check('a stated hash that does not match the file is flagged',
+  hashWrong.code === 1
+    && hashWrong.json.findings.some((f) => f.kind === 'artifact' && /sha256/.test(f.detail)),
+  JSON.stringify(hashWrong.json.findings));
+
+// Negative control for the artifact half: naming a file that is really there,
+// with no hash claimed, must stay silent. A checker that flags every path is
+// as useless as one that flags none.
+const ARTIFACT_OK = `# Visual critique
+
+The shot under review is shot.png; the crop discussion refers to its lower
+third. No measurements were taken.
+`;
+const artifactOk = await judge('artifact-ok', ARTIFACT_OK);
+check('naming a file that exists is not a finding',
+  artifactOk.code === 0, JSON.stringify(artifactOk.json.findings));
 
 // --- interfaces -----------------------------------------------------------
 const piped = await run(['--json', '-'], FABRICATED);

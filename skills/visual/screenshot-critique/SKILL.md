@@ -28,7 +28,8 @@ any content in it at all.
    icon readability, blur, scale, lighting, artifacts, missing models, terrain
    feature readability, roads, water, and overall scan readability.
 5. Run the returned critique through `scripts/receipts.mjs`. Every number it
-   flags is a claim the critique cannot support; strike those claims or
+   flags is a claim the critique cannot show a command for, and every file it
+   flags is one the critique named but never wrote; strike those claims or
    re-measure them yourself before any of them reach a decision.
 6. Compare the sub-agent's critique against your own inspection. Treat overlap
    as high-priority evidence. Treat novel high-confidence findings as bugs to
@@ -92,11 +93,19 @@ wrote.
 - **Verify, don't trust the eye of the verifier.** Run `scripts/receipts.mjs`
   over the returned report — `node scripts/receipts.mjs <report.md>` — before
   you read the findings, so an unsupported number never gets to be persuasive
-  first. It exits nonzero and prints each unbacked quantity with its line.
-  `scripts/receipts.eval.mjs` is its own eval, over reports written in the eval
-  whose right answer is known by construction, both directions pinned: run it
-  after changing the checker, and never widen what counts as a receipt to make
-  a failing case pass.
+  first. It exits nonzero and prints each unbacked quantity and each file the
+  report named but never wrote. `scripts/receipts.eval.mjs` is its own eval,
+  over reports written in the eval whose right answer is known by construction,
+  both directions pinned: run it after changing the checker, and never widen
+  what counts as a receipt to make a failing case pass.
+- **Know which half of it is proof.** The file check is proof: the path is
+  resolved on disk and a stated sha256 is recomputed, so an invented crop dies
+  there. The number check is attribution, not execution — it asks whether a
+  command is shown running with this number in its output, and a report that
+  invents the whole transcript passes. Nothing readable from static text can
+  separate an invented transcript from a real one. So a clean run means the
+  claims are attributable and the files are real, not that anything ran; ask
+  for the artifact and the hash when a number has to hold weight.
 - **Ordinal words are still findings; numbers are not.** "Clearly darker",
   "roughly a third of the panel", "the left edge is cut off" are what an eye can
   honestly report. Push the critique toward that register rather than trying to
