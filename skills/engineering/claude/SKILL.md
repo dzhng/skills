@@ -63,7 +63,17 @@ the user explicitly asks it to edit.
    output, or labelled inferences.
 2. Prefer a read-only tool surface for reviews:
    `--tools "Read,Grep,Glob,Bash" --permission-mode dontAsk`.
-3. Triage every finding against the code before acting. Report what Claude
+3. **Never grant fewer tools than your output contract requires.** Read your
+   own prompt and ask which tool produces each claim you demanded. A judge that
+   cannot run a command will still answer a question posed in numbers — with
+   numbers, self-consistent and measured from nothing, and with the artifacts
+   it says it wrote. Trimming the tool surface does not make the answer
+   cautious; it makes the fabrication harder to spot. Either grant the tool or
+   stop asking for the claim.
+4. Require the receipt with the number: any quantity in the response must
+   arrive with the command that produced it and that command's output. Findings
+   that fail this are struck, not discounted.
+5. Triage every finding against the code before acting. Report what Claude
    flagged, what you accepted, and what you dismissed.
 
 ## Implementation — explicit ask only
@@ -112,3 +122,5 @@ classify the failure before retrying.
 - Keep Claude's writes out of the working tree unless delegation was explicit.
 - Do not touch the same working tree while Claude is making edits.
 - Treat Claude output as evidence to verify, not authority to relay.
+- Match the tool surface to the output contract; a claim shape you granted no
+  tool for comes back invented.
