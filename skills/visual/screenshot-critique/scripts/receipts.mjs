@@ -76,6 +76,7 @@ const HEX = /(?<![\w])(0x[0-9a-f]{2,8}|#[0-9a-f]{3,8})(?![\w])/gi;
 const ARTIFACT = /(?<![\w@/-])((?:\.{1,2}\/|~\/|\/)?[\w.-]+(?:\/[\w.-]+)*\.(?:png|jpe?g|gif|webp|bmp|tiff?|pdf|csv|tsv|json|ndjson|txt|npy))(?![\w])/gi;
 
 const SHA256 = /\b(?:sha-?256[\s:=]*)?([0-9a-f]{64})\b/i;
+const SHA256_ALL = new RegExp(SHA256.source, 'gi');
 
 const argv = process.argv.slice(2);
 if (argv.length === 0 || argv.includes('--help') || argv.includes('-h')) {
@@ -239,49 +240,90 @@ function resolveArtifact(path, baseDir) {
   return isAbsolute(path) ? path : resolve(baseDir, path);
 }
 
+// The hash stated for the path at [start, end) on line `i`, or null.
+//
+// Both sides are read and the nearer one wins, so a line that pairs two files
+// with two hashes still gives each path the hash written against it. The
+// forward scope keeps the following line — a shasum block prints the pair on
+// its own line — while the backward scope stays on this line, because a hash
+// on the line above generally belongs to the artifact named up there.
+function statedHash(lines, i, start, end) {
+  const line = lines[i];
+  const before = line.slice(0, start);
+  const after = `${line.slice(end)} ${lines[i + 1] ?? ''}`;
+
+  let left = null;
+  for (const m of before.matchAll(SHA256_ALL)) left = m;
+  const right = SHA256.exec(after);
+
+  if (!left) return right ? right[1] : null;
+  if (!right) return left[1];
+  const leftGap = before.length - (left.index + left[0].length);
+  return leftGap <= right.index ? left[1] : right[1];
+}
+
 function checkArtifacts(lines, baseDir) {
+  // A path is judged once, over all of its occurrences. A report names the
+  // same file in the command it ran and again in the output that came back,
+  // and `shasum -a 256 a.png b.png` prints one line per file, so the hash
+  // sitting beside one occurrence is not the hash sitting beside another. The
+  // claim is that the file is this file: it holds if any hash stated for the
+  // path is the file's own, and fails when every stated hash is something
+  // else.
   const findings = [];
-  const seen = new Set();
+  const occurrences = new Map();
   for (let i = 0; i < lines.length; i++) {
     for (const match of lines[i].matchAll(ARTIFACT)) {
       const claimed = match[1];
-      if (seen.has(claimed)) continue;
-      seen.add(claimed);
-      const full = resolveArtifact(claimed, baseDir);
-      let exists = false;
-      try {
-        exists = statSync(full).isFile();
-      } catch {
-        exists = false;
-      }
-      if (!exists) {
-        findings.push({
-          kind: 'artifact',
-          line: i + 1,
-          column: match.index + 1,
-          claim: claimed,
-          detail: 'no such file',
-          text: lines[i].trim(),
-        });
-        continue;
-      }
-      // A hash stated on the same line, or the line under it, is a claim about
-      // which file this is. Recompute it.
-      const scope = `${lines[i]} ${lines[i + 1] ?? ''}`;
-      const stated = SHA256.exec(scope.slice(match.index + claimed.length));
-      if (!stated) continue;
-      const actual = createHash('sha256').update(readFileSync(full)).digest('hex');
-      if (actual !== stated[1].toLowerCase()) {
-        findings.push({
-          kind: 'artifact',
-          line: i + 1,
-          column: match.index + 1,
-          claim: claimed,
-          detail: `sha256 is ${actual.slice(0, 16)}…, report says ${stated[1].slice(0, 16)}…`,
-          text: lines[i].trim(),
-        });
-      }
+      if (!occurrences.has(claimed)) occurrences.set(claimed, []);
+      occurrences.get(claimed).push({ line: i, column: match.index });
     }
+  }
+
+  for (const [claimed, sites] of occurrences) {
+    const full = resolveArtifact(claimed, baseDir);
+    let exists = false;
+    try {
+      exists = statSync(full).isFile();
+    } catch {
+      exists = false;
+    }
+    const first = sites[0];
+    if (!exists) {
+      findings.push({
+        kind: 'artifact',
+        line: first.line + 1,
+        column: first.column + 1,
+        claim: claimed,
+        detail: 'no such file',
+        text: lines[first.line].trim(),
+      });
+      continue;
+    }
+
+    // A hash stated beside the path is a claim about which file this is.
+    // Recompute it. Reports write the pair both ways round — `crop.png
+    // sha256 abc…` and `sha256 abc…  crop.png`, the latter being what shasum
+    // itself prints — so a hash before the path counts as much as one after.
+    const claims = [];
+    for (const site of sites) {
+      const stated = statedHash(lines, site.line, site.column, site.column + claimed.length);
+      if (stated) claims.push({ site, stated: stated.toLowerCase() });
+    }
+    if (claims.length === 0) continue;
+
+    const actual = createHash('sha256').update(readFileSync(full)).digest('hex');
+    if (claims.some((claim) => claim.stated === actual)) continue;
+
+    const { site, stated } = claims[0];
+    findings.push({
+      kind: 'artifact',
+      line: site.line + 1,
+      column: site.column + 1,
+      claim: claimed,
+      detail: `sha256 is ${actual.slice(0, 16)}…, report says ${stated.slice(0, 16)}…`,
+      text: lines[site.line].trim(),
+    });
   }
   return findings;
 }

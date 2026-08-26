@@ -38,6 +38,11 @@ const SHOT = Buffer.from(
 );
 await writeFile(resolve(workspace, 'shot.png'), SHOT);
 const SHOT_SHA = createHash('sha256').update(SHOT).digest('hex');
+// A second real file, so a fixture can pair two paths with two hashes and show
+// that each path is read against the hash written beside it.
+const CROP = Buffer.concat([SHOT, Buffer.from('\n')]);
+await writeFile(resolve(workspace, 'crop.png'), CROP);
+const CROP_SHA = createHash('sha256').update(CROP).digest('hex');
 const WRONG_SHA = 'f'.repeat(64);
 
 function run(args, stdin = null) {
@@ -290,6 +295,47 @@ check('a stated hash that does not match the file is flagged',
   hashWrong.code === 1
     && hashWrong.json.findings.some((f) => f.kind === 'artifact' && /sha256/.test(f.detail)),
   JSON.stringify(hashWrong.json.findings));
+
+// Reports write the pair both ways round, and `shasum` itself prints the hash
+// first. A checker that only looks to the right of the path lets the whole
+// claim through on the line shasum produced.
+const HASH_WRONG_BEFORE = `# Visual critique
+
+\`\`\`
+$ shasum -a 256 -- *.png
+${WRONG_SHA}  shot.png
+\`\`\`
+`;
+const hashWrongBefore = await judge('hash-wrong-before', HASH_WRONG_BEFORE);
+check('a wrong hash stated before the path is flagged',
+  hashWrongBefore.code === 1
+    && hashWrongBefore.json.findings.some((f) => f.kind === 'artifact' && /sha256/.test(f.detail)),
+  JSON.stringify(hashWrongBefore.json.findings));
+
+const HASH_OK_BEFORE = `# Visual critique
+
+\`\`\`
+$ shasum -a 256 -- *.png
+${SHOT_SHA}  shot.png
+\`\`\`
+`;
+const hashOkBefore = await judge('hash-ok-before', HASH_OK_BEFORE);
+check('the right hash stated before the path passes',
+  hashOkBefore.code === 0, JSON.stringify(hashOkBefore.json.findings));
+
+// Reading both sides is only safe if the nearer hash wins: a line that pairs
+// two files with two hashes must give each path its own, or the fix trades one
+// bypass for a false accusation.
+const HASH_TWO_ON_A_LINE = `# Visual critique
+
+\`\`\`
+$ shasum -a 256 shot.png crop.png
+${SHOT_SHA}  shot.png  ${CROP_SHA}  crop.png
+\`\`\`
+`;
+const hashTwoOnALine = await judge('hash-two-on-a-line', HASH_TWO_ON_A_LINE);
+check('two files and two hashes on one line each keep their own',
+  hashTwoOnALine.code === 0, JSON.stringify(hashTwoOnALine.json.findings));
 
 // Negative control for the artifact half: naming a file that is really there,
 // with no hash claimed, must stay silent. A checker that flags every path is
