@@ -1,0 +1,19 @@
+{
+  "name": "@dzhng/skills",
+  "version": "1.0.0",
+  "description": "AI skills for building software factories",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "install-skills": "scripts/install-skills.mjs"
+  },
+  "scripts": {
+    "install-skills": "node scripts/install-skills.mjs",
+    "list-skills": "node scripts/install-skills.mjs --list"
+  },
+  "files": [
+    "skills",
+    "scripts"
+  ]
+}

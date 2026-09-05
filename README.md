@@ -17,6 +17,22 @@ npx skills add dzhng/skills
 Add `--list` to pick individual skills, or copy any `skills/<category>/<name>/`
 folder into your harness's skills directory (e.g. `.claude/skills/`).
 
+From a clone, `npm run install-skills` does the same without the registry:
+
+```bash
+npm run install-skills              # into ~/.agents/skills, linked from ~/.claude/skills
+npm run install-skills -- ../my-app # into a repo instead of the home directory
+npm run install-skills -- --only write-spec,review ../my-app
+npm run list-skills                 # names and categories
+```
+
+`.agents/skills/<name>/` holds the real files (flat, category-free, with
+cross-category links rewritten to match); `.claude/skills/<name>` is a relative
+symlink into it, so both harnesses read one copy. Re-running overwrites the
+installed copies — a `.claude/skills/<name>` you keep as a real directory is
+left alone, and a `.claude/skills` that is already a symlink is left as is. Add
+`--dry-run` to see the plan first.
+
 ## Why
 
 Software is moving from tasks to **factories**: agents that pursue a goal
