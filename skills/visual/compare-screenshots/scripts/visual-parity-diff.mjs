@@ -7,7 +7,7 @@ const cwd = resolve(process.cwd());
 const repoRoot = process.env.REPO_ROOT ? resolve(process.env.REPO_ROOT) : basename(cwd) === 'web' ? resolve(cwd, '..') : cwd;
 const require = createRequire(resolve(repoRoot, 'web/package.json'));
 const { PNG } = require('pngjs');
-const pixelmatch = (await import(require.resolve('pixelmatch'))).default;
+const pixelmatch = (await import(pathToFileURL(require.resolve('pixelmatch')).href)).default;
 
 const currentDir = process.env.REFERENCE_DIR ? requiredDir('REFERENCE_DIR') : null;
 const candidateDir = requiredDir('CANDIDATE_DIR');
