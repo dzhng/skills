@@ -183,6 +183,7 @@ when the research is ready for implementation.
 | [launch-video](skills/graphics/launch-video/SKILL.md) | Direct a showreel-grade launch video in code — one visual concept grown from the project, picture and a synthesized score locked to one timing source, and a preview frame that survives social feeds. |
 | [cinematic-shot](skills/graphics/cinematic-shot/SKILL.md) | Shoot software UI like a film — steep, oblique extreme close-up hero shots with a razor-thin focal plane, slow motivated camera drift, and UI that acts on its own, hard-cut on the action. |
 | [isometric-motion](skills/graphics/isometric-motion/SKILL.md) | Build animations and interactive elements in a crafted isometric style — solid many-part figures, four-tone shading, a framed card with live readout, and calm eased motion driven by one model. |
+| [ian-xiaohei-illustrations](skills/graphics/ian-xiaohei-illustrations/SKILL.md) | Hand-drawn 16:9 editorial illustrations for articles and docs, starring Xiaohei, a small solid-black creature acting out each idea, with sparse handwritten English annotations. |
 
 ## License
 
@@ -198,3 +199,6 @@ Thanks also to Matt and [Thariq](https://x.com/trq212) for the **fog of war** an
 Thanks to [wheresryan22](https://github.com/wheresryan22) for the
 [Anatomy skill](https://github.com/wheresryan22/anatomy), copied here as
 `isometric-motion` and repurposed for animations and interactive elements.
+Thanks to [helloianneo](https://github.com/helloianneo) for the
+[Ian Xiaohei illustrations skill](https://github.com/helloianneo/ian-xiaohei-illustrations),
+copied here in its English version as `ian-xiaohei-illustrations`.
