@@ -35,7 +35,8 @@ Compare Image A and Image B. Report:
    feature it crosses. Report local discrepancies even if everything is legible.
 4. Give a per-feature reference observation → candidate observation →
    pass/fix/uncertain record. Distinguish solid/core edges from faint fringe;
-   measure endpoints and gaps relative to visible anchors. Verify crops include
+   locate endpoints and gaps relative to visible anchors, in words unless you
+   quote the command and output that measured them. Verify crops include
    the entire feature. Request paired effect-on/off captures when background
    texture makes extent ambiguous. A small discrepancy still needs resolution;
    do not label it acceptable merely because the whole looks similar.

@@ -2,10 +2,9 @@
 //
 // Every fixture is generated here, so the correct answer is known by
 // construction rather than read back from a previous run — a snapshot of
-// current output would happily bless a bug. Run it from a repo where the
-// script's own dependencies resolve:
+// current output would happily bless a bug. Dependencies are bundled in vendor/:
 //
-//   REPO_ROOT=<repo> node visual-parity-diff.eval.mjs
+//   node visual-parity-diff.eval.mjs
 //
 // Exits nonzero on the first failing expectation set, printing every check.
 
@@ -19,8 +18,8 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const script = resolve(here, 'visual-parity-diff.mjs');
 const repoRoot = resolve(process.env.REPO_ROOT ?? process.cwd());
-const require = createRequire(resolve(repoRoot, 'web/package.json'));
-const { PNG } = require('pngjs');
+const require = createRequire(import.meta.url);
+const { PNG } = require('../vendor/pngjs');
 
 const checks = [];
 const check = (name, pass, detail = '') => checks.push({ name, pass, detail });
