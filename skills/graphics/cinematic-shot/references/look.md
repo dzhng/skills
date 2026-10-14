@@ -21,8 +21,8 @@ Put the UI on one plane inside a perspective camera. Rotate in-plane first, then
   transform-origin: var(--fx) var(--fy);   /* the focal point, in UI pixels */
   transform:
     translate3d(var(--tx), var(--ty), 0)   /* drift: animated */
-    rotateX(var(--pitch))                  /* tilt back: 30–50deg */
     rotateY(var(--yaw))                    /* ±5–15deg */
+    rotateX(var(--pitch))                  /* tilt back: 30–50deg */
     rotateZ(var(--roll))                   /* in-plane: ±10–20deg, sign flips per shot */
     scale(var(--mag));                     /* magnification at the focal point */
 }
