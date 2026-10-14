@@ -181,6 +181,7 @@ when the research is ready for implementation.
 |---|---|
 | [renderer](skills/graphics/renderer/SKILL.md) | Architecture rules for GPU rendering with TypeGPU/WebGPU — one frame orchestrator, single owners, a resource registry, depth and compositing contracts, and verification that looks at pixels. |
 | [launch-video](skills/graphics/launch-video/SKILL.md) | Direct a showreel-grade launch video in code — one visual concept grown from the project, picture and a synthesized score locked to one timing source, and a preview frame that survives social feeds. |
+| [cinematic-shot](skills/graphics/cinematic-shot/SKILL.md) | Shoot software UI like a film — steep, oblique extreme close-up hero shots with a razor-thin focal plane, slow motivated camera drift, and UI that acts on its own, hard-cut on the action. |
 
 ## License
 
