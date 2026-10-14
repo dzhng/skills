@@ -1,9 +1,9 @@
 ---
-name: ian-xiaohei-illustrations
+name: xiaohei-illustrations
 description: Generate Ian-style Xiaohei illustrations for articles, posts, blogs, Notion documents, workflows, methods, processes, structures, states, metaphors, and opinions. Use when the user asks for weird, hand-drawn, Xiaohei, article, editorial, body illustrations, illustration ideas, shot lists, title removal, image edits, or image regeneration. By default, all image text and annotations are English, even when the source article is Chinese; only use another language when the user explicitly asks.
 ---
 
-# Ian Xiaohei Editorial Illustrations
+# Xiaohei Illustrations
 
 ## Purpose
 
