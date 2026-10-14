@@ -182,6 +182,7 @@ when the research is ready for implementation.
 | [renderer](skills/graphics/renderer/SKILL.md) | Architecture rules for GPU rendering with TypeGPU/WebGPU — one frame orchestrator, single owners, a resource registry, depth and compositing contracts, and verification that looks at pixels. |
 | [launch-video](skills/graphics/launch-video/SKILL.md) | Direct a showreel-grade launch video in code — one visual concept grown from the project, picture and a synthesized score locked to one timing source, and a preview frame that survives social feeds. |
 | [cinematic-shot](skills/graphics/cinematic-shot/SKILL.md) | Shoot software UI like a film — steep, oblique extreme close-up hero shots with a razor-thin focal plane, slow motivated camera drift, and UI that acts on its own, hard-cut on the action. |
+| [isometric-motion](skills/graphics/isometric-motion/SKILL.md) | Build animations and interactive elements in a crafted isometric style — solid many-part figures, four-tone shading, a framed card with live readout, and calm eased motion driven by one model. |
 
 ## License
 
@@ -194,3 +195,6 @@ Thanks to [Matt Pocock](https://x.com/mattpocockuk) for the
 copied here with its writing-guide references pointed at this repo's `write-skills`.
 Thanks also to Matt and [Thariq](https://x.com/trq212) for the **fog of war** and
 **discovering the map** concepts that helped shape these skills.
+Thanks to [wheresryan22](https://github.com/wheresryan22) for the
+[Anatomy skill](https://github.com/wheresryan22/anatomy), copied here as
+`isometric-motion` and repurposed for animations and interactive elements.
