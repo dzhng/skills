@@ -10,6 +10,9 @@ refactor or config change that preserves it. Most bad tests fail the opposite
 way: red on harmless changes, green while the real path is broken. Every rule
 below serves that one goal.
 
+For deciding whether coverage adds independent proof, where it belongs, or
+which existing tests can go, use [audit-tests](../audit-tests/SKILL.md).
+
 ## Workflow: tracer bullets, not a batch
 
 1. **Write ONE test at a time.** Assert first, watch it go red on the un-fixed
@@ -91,6 +94,30 @@ below serves that one goal.
   delete them the moment the question is answered, or promote them into a real
   test if the behavior deserves a permanent guard.
 
+## Tests run on someone's live machine
+
+A suite that grabs the desktop is a suite people stop running. Whatever the test
+needs, it takes the least intrusive form of it:
+
+- **Never take focus.** No activating the app, no `makeKeyAndOrderFront`, no
+  raising, no moving the pointer, no simulated clicks into the session, no audio
+  playback. A UI a person must not be interrupted by is still fully testable:
+  build the window, drive its model, and assert on the rendered view. Where a
+  screenshot is the evidence, capture the window's own image offscreen rather
+  than photographing the screen. Keep activation on the code path a person
+  triggers, and exercise it by calling the handler, not by launching the app
+  repeatedly.
+- **Write nowhere the person keeps their own state.** Point every test at a
+  scratch home, a scratch preferences domain or suite, and scratch install
+  locations. A test must never modify the real config, library, login items or
+  installed applications. Production may read an override the tests set; it must
+  behave normally when that override is absent.
+- **Batch anything unavoidably visible.** If a check genuinely needs a real
+  launch, do all of its observations in one run instead of one relaunch per
+  assertion, and say in the evidence that it was visible.
+- **Leave nothing running.** Every process, window, server and temporary file the
+  test started is stopped and removed, including on failure.
+
 ## Prove the test can fail
 
 A test you never saw fail is decoration. For any regression test — especially
@@ -131,3 +158,6 @@ Walk this on any test diff, apply fixes in the same pass, re-run the suite:
 6. Is the function under test still called in production? → if the only
    callers are tests, delete the function and the test together.
 7. Can it fail for the right reason? → falsify once to confirm.
+8. Does it take focus, move the pointer, play sound, or write the person's real
+   config, library or applications? → drive the model and a scratch location
+   instead, and capture windows offscreen.

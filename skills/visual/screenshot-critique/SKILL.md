@@ -14,14 +14,17 @@ any content in it at all.
 ## Workflow
 
 1. Capture or locate the exact PNGs/GIF frames under review.
-2. Create tight 2x-4x crops for every key feature under judgment, plus the full
-   screenshot for context. Crop selected units, city/town stacks, flags/poles,
+2. Keep native-size evidence and create supplementary 2x-4x crops for every
+   key feature, plus the full screenshot. Include complete endpoints and fades;
+   recheck crop bounds after geometry changes. Crop selected units, city/town
+   stacks, flags/poles,
    shadows, selection rings, labels/icons, roads, terrain features, water, and
    any artifact-prone area. If the complaint is about "too faint", "wrong
    order", or "not in perspective", the crop is mandatory.
 3. Spawn one fresh explorer with `fork_context: false`; pass only the full
-   images, the crops, and a short neutral task. Do not include the main thread
-   history, implementation details, or expected answer.
+   images, the crops, and a short neutral task. Include the approved reference
+   and user requirements when judging fidelity; withhold history, implementation
+   details, prior verdicts and the expected answer.
 4. Ask for concrete visible defects with confidence levels. Name likely risk
    categories: unit/prop depth ordering, layering, shadows, selection-marker
    contrast, ground-plane perspective, flag/pole attachment, label style and
@@ -157,7 +160,8 @@ wrote.
 - For animation, attach a short set of deterministic still frames first; GIFs
   are useful for human review, but still frames make specific defects easier to
   name.
-- A passing sub-agent critique does not replace direct inspection by the main
-  agent or screenshot regression gates.
+- A passing headline does not erase a reported small mismatch or uncertainty.
+  Resolve it using [Reference Landmarks](../compare-screenshots/references/reference-landmarks.md);
+  a second opinion does not replace direct inspection or regression gates.
 - If the sub-agent catches an issue the main agent missed, add that failure mode
   to the relevant feature plan or visual checklist immediately.

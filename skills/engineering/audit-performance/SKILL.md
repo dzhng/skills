@@ -59,6 +59,12 @@ Do not prioritize by scary-looking counts alone:
   or fixed prefix forever.
 - Bound both sides of a transport and every durable/in-memory queue. State the overflow behavior;
   never silently drop accepted durable data.
+- Judge a cache, an index or a delta protocol by its worst edit, not its quiet average: an insertion
+  into a long retained collection, a change far from the active view, a move, a deletion. Assert the
+  bounded work alongside the exact result.
+- Check that a measured workload does what it claims before trusting its numbers: that the forces
+  meet, the route is travelled, the failure arm runs. Measure the failure arm too.
+- Isolate a cost measurement from everything else running in the process.
 - Match compatibility work to the product lifecycle. In prelaunch code, prefer direct changes and
   add no legacy branches or migrations unless real persisted data requires them.
 - Every limit introduced or changed must have an observable log or metric with the limit kind,
