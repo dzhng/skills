@@ -1,10 +1,6 @@
 ---
 name: isometric-motion
-description: Build animations and interactive elements (explainers, figures, hero visuals, step-through walkthroughs) in the crafted isometric "Anatomy" style, with many small precise solid parts, four-tone shading, correct painter's order, a framed card with title, hint and live readout, and calm eased motion. Works for physical machines and for abstract concepts (e.g. how an LLM picks its next token), as SVG/HTML or React/Next.js, with optional in-perspective WebGL shaders. Use this whenever someone wants an isometric animation, interactive element, explanatory diagram or figure for docs, a blog post, a landing page or an article, a "Linear-style" or "premium" technical drawing, or an SVG that shows how a system, algorithm or component works, even if they never say "isometric". Also publishes a finished figure to the Anatomy community gallery when asked.
-license: MIT
-compatibility: Written for Claude Code; also runs in Antigravity, OpenCode and Codex. Needs Node.js 20.10+, and Chrome or Chromium for the checks.
-metadata:
-  opencode/slash: "true"
+description: Build animations and interactive elements (explainers, figures, hero visuals, step-through walkthroughs) in the crafted isometric "Anatomy" style, with many small precise solid parts, four-tone shading, correct painter's order, a framed card with title, hint and live readout, and calm eased motion. Works for physical machines and for abstract concepts (e.g. how an LLM picks its next token), as SVG/HTML or React/Next.js, with optional in-perspective WebGL shaders. Use this whenever someone wants an isometric animation, interactive element, explanatory diagram or figure for docs, a blog post, a landing page or an article, a "Linear-style" or "premium" technical drawing, or an SVG that shows how a system, algorithm or component works, even if they never say "isometric".
 ---
 
 # Isometric Motion
@@ -179,4 +175,3 @@ Read these as you need them:
 - `references/webgl.md`: shaders inside the drawing: when one earns its place, the layer stack, the camera contract, ray-marching in the iso camera, the full API with a minimal page, the craft rules with the bugs that taught them, the light theme (inks on paper, per-phenomenon recipes, the reviewers' faults), and how to verify them.
 - `references/walkthrough.md`: how the test rig was designed, step by step, from concept to code.
 - `references/3d.md`: the optional 3D mode: groups and poses, live layers, convex parts and their rules, materials, free groups, hinge chains, painter's order, static clutter around a turntable, shaders that follow the turn, the orbit audit, browser checks, performance and limits.
-- `references/publish.md`: sharing a finished figure in the community gallery with `scripts/publish.mjs`, only when the user asks; nothing is pushed for them.
