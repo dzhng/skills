@@ -8,12 +8,16 @@ the answer lives with the user or in the territory.
 1. Inventory the questions the task cannot proceed without, and disclose the
    queue ("still queued after this: …") so the user sees how much walk
    remains.
-2. Resolve them **one at a time, highest architectural blast radius first** —
-   never a wall of questions. Give your recommended answer with each, as
-   lettered options the user can answer in a few characters, so they react
+2. Before asking another question, apply the main skill's preference
+   checkpoint when due. Otherwise resolve them **one at a time, highest
+   architectural blast radius first** — never a wall of questions. Give your
+   recommended answer with each, as lettered options the user can answer in
+   a few characters, so they react
    rather than compose.
-3. Close every question one of three ways:
+3. Close every question one of four ways:
    - **Answered by the user.**
+   - **Answered by the agent on the user's behalf** — only under the
+     preference checkpoint's opt-in and disclosure rules.
    - **Answered by the territory** — go read it instead of asking, then show
      the user the question and the found answer. A question closed off-screen
      isn't closed.

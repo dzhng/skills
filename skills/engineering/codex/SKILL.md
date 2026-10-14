@@ -54,19 +54,37 @@ of eyes on — a refactor, a tricky algorithm, renderer work, a security-sensiti
 change — before declaring it done or committing. Skip it for trivial edits
 (typos, comments, doc-only).
 
-1. Pick the diff scope: `codex review --uncommitted` for working-tree changes,
-   `--base <branch>` for a branch diff, `--commit <sha>` for a landed commit.
-   Scope flags and custom instructions are mutually exclusive (despite what
-   `--help` implies): `codex review "<instructions>"` reviews the default
-   scope with your framing, a scope flag takes no prompt. When you do write
-   instructions, scope the risk area — never state the answer you expect
-   (unprimed, same discipline as
+1. Fix the diff scope before launching: `--uncommitted` for working-tree
+   changes, `--base <branch>` for a branch diff, `--commit <sha>` for a landed
+   commit. Resolve a landed commit to its full SHA. Use the non-interactive
+   review entry point with an explicit read-only sandbox and separate progress
+   and verdict files in a fresh temporary directory:
+
+   ```sh
+   review_dir=$(mktemp -d "${TMPDIR:-/tmp}/codex-review.XXXXXX")
+   codex exec --sandbox read-only -C "$(git rev-parse --show-toplevel)" review \
+     --commit "$(git rev-parse HEAD)" --json -o "$review_dir/verdict.md" \
+     < /dev/null > "$review_dir/events.jsonl" 2> "$review_dir/stderr.log"
+   ```
+
+   Background long runs and retain their process/session handle. Scope flags
+   and custom instructions are mutually exclusive: a scope flag takes no
+   prompt. For custom framing, specify the exact diff to inspect in the prompt;
+   don't rely on default scope or traverse all refs/checkpoint history. Never
+   state the answer you expect (unprimed, same discipline as
    [screenshot-critique](../../visual/screenshot-critique/SKILL.md)).
-2. Triage every finding: confirm it against the code before acting. Preserve
+2. Monitor progress in `events.jsonl` and failures in `stderr.log`. An active
+   reviewer reading relevant code is not hung merely because five minutes
+   elapsed. If it stalls or drifts outside the diff and its dependencies,
+   inspect the last command/error before interrupting; correct the cause or
+   narrow the task before retrying. Completion requires exit status zero,
+   `turn.completed`, and a nonempty final verdict. A timeout, `turn.failed`, or
+   missing verdict is incomplete, never a clean review.
+3. Triage every finding: confirm it against the code before acting. Preserve
    Codex's evidence boundaries — an inference it labelled is not a fact.
    Overlap with your own doubts is high-priority evidence; a finding you
    dismiss needs a stated reason, not silence.
-3. Report the outcome to the user — what Codex flagged, what you fixed, what
+4. Report the outcome to the user — what Codex flagged, what you fixed, what
    you dismissed and why. Done when every finding is either fixed or
    explicitly dismissed.
 
@@ -139,7 +157,7 @@ changes. "Process running" is NOT "working."
 ## Rules
 
 - Don't touch the working tree while a Codex exec is running on it.
-- `--sandbox read-only` (the default) for consultation and questions;
+- Explicit `--sandbox read-only` for reviews, consultation and questions;
   `workspace-write` only for delegated implementation.
 - `--dangerously-bypass-approvals-and-sandbox` is reserved for tasks that must
   run browsers/servers/full suites (above) — dedicated worktree, self-authored

@@ -6,8 +6,8 @@ description: Implement an existing spec through committed passes. Use for long o
 # Implement Spec
 
 Build the active spec to completion, one reviewable pass at a time. The spec is
-the source of truth, but the architecture is allowed to improve when the code
-teaches you the plan is stale.
+the implementation plan; user constraints and accepted experimental evidence
+remain binding when the architecture changes.
 
 A pass (usually one slice) is a **commit checkpoint, not a stopping point.** The
 job is the whole spec — every slice, every global TODO — not the first green
@@ -27,6 +27,7 @@ depends on prior work.
    Load any skills named by the spec. Identify the current pickup point, global
    TODOs, required gates, and what must stay green. If a multi-slice spec lacks
    a live handoff prompt, add one before the first pass ends.
+   For a validated spike, apply **Preserve the winner** below before editing.
 2. Reconcile the plan with the current code. If the slice would preserve a
    development-only shim, duplicated type, weak wrapper, or obsolete path,
    replace it with the simpler architecture and update the spec handoff.
@@ -49,9 +50,10 @@ depends on prior work.
 5. **Review the change list and clean up after every pass, before committing.**
    Read `git status`/`git diff --stat` line by line and account for every path:
    one-off probes, shot scripts, scratch files, `nohup.out`, ad-hoc screenshot
-   dirs, and SPIKE/debug notes never enter a commit — scratch stays out of the
-   tree; review evidence belongs in the spec's `assets/`; anything else gets
-   deleted. A file you can't name the durable purpose of does not ship.
+   dirs, and disposable SPIKE/debug notes never enter a commit — scratch stays
+   out of the tree. Preserve frozen references, fixtures, and research evidence
+   in the project's reference or spec assets area. A file without a durable
+   purpose does not ship.
    Delegated agents leak these; the integrating reviewer re-checks the merged
    tree with the same eye.
 
@@ -128,6 +130,22 @@ depends on prior work.
    user now owns. Present it per [audit-choices](../audit-choices/SKILL.md): grouped
    by verdict, ranked least-confident-first, every entry ELI5 and standalone.
    *Then* close the spec with [close-spec](../close-spec/SKILL.md).
+
+## Preserve the winner
+
+- Read the frozen winning code, configuration, prompts/skills, and evidence.
+  Preserve actual behavior, including quirks whose contribution is unknown.
+  A rewritten spec or cleaner design does not supersede measured results.
+- Port first; experiment separately. Give delegates the same reference and
+  constraints. Record user-required differences; validate other behavioral
+  changes against the winner before adopting them.
+- Prove parity through the production entry point with matched inputs and
+  controlled external responses. Compare computed requests, decisions, complete
+  outputs, and relevant recovery paths—not just templates or component tests.
+  Normalize only documented intentional differences. Run these cheap checks
+  before costly confirmation, retaining the original quality gates.
+- Missing parity evidence means unfinished. Preserve the reference and continue
+  independent work rather than declaring equivalence.
 
 ## Rules
 

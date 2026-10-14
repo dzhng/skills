@@ -19,9 +19,10 @@ will do.
    the body.
 
 2. **Spend tokens like they are scarce.** Assume the agent is already good at
-   general reasoning. Keep only non-obvious workflow, domain constraints,
-   tool choices, failure modes, and validation rules. Delete background,
-   motivation, and generic advice.
+   general reasoning. State the direction and let smart models figure out
+   implementation details. A wrapper skill can be two sentences: name the
+   capability to use and the skill to follow. Add mechanics only when a
+   demonstrated failure requires them.
 
 3. **Write procedures, not essays.** Prefer imperative rules, decision
    points, and small examples. A good skill changes behavior in the next
@@ -199,7 +200,10 @@ One short paragraph defining the job.
 
 When creating or revising a skill:
 
-- Name it with lowercase hyphen-case; keep the folder name identical.
+- Prefer **action + plural noun** in lowercase hyphen-case: `audit-tests`,
+  `write-skills`, `compare-screenshots`. Keep the folder and frontmatter name
+  identical. Use a natural exception when pluralizing would distort the meaning;
+  this is the default for new names, not a mandate to rename existing skills.
 - Make the description specific enough to trigger without the body.
 - Remove any "when to use" section from the body.
 - Remove stale history, attribution, placeholders, and setup notes.

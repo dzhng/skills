@@ -9,8 +9,10 @@ One self-contained page holding all four quadrants:
 
 - **Known knowns** — the settled ground, with file citations.
 - **Known unknowns** — the decision ledger: every named question with its
-  answer and who closed it (user / territory / OPEN). OPEN items state what
-  unblocks them.
+  answer and who closed it (user / territory / agent on the user's behalf /
+  OPEN). Agent answers retain the preference and reason behind each choice,
+  alongside the confirmed preference summary and delegation scope. OPEN
+  items state what unblocks them.
 - **Unknown knowns** — what got extracted: taste, consumers, environment,
   tacit conventions, and what each reshaped.
 - **Unknown unknowns** — the landmine cards with evidence, each marked

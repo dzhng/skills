@@ -17,8 +17,9 @@ the code the task will touch and turns silent traps into map entries.
      inherits; escalate them to the map rather than silently absorbing them.
 2. Report each finding as a card: the **evidence** (file and line), **why it
    bites**, and **what it changes** about the task. Worst first.
-3. A finding that needs a user decision closes like a stage-2 question:
-   lettered options with your recommendation. A finding that only needs
+3. A finding that needs a decision follows the stage-2 closure rules,
+   including preference-based delegation when applicable. If asking the user,
+   give lettered options with your recommendation. A finding that only needs
    awareness goes straight on the map as a sharp edge.
 
 Remember the global rule: findings that bear on decisions already in flight

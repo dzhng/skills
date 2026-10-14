@@ -7,19 +7,24 @@ description: Use the unprimed sub agent as a second set of eyes before accepting
 
 Use an unprimed sub-agent as a second set of eyes before accepting visual work.
 This is for visual defects, not pixel metrics; pair it with
-`compare-screenshots` when you also need numbers.
+`compare-screenshots` when you also need numbers — including on a single shot
+with nothing to compare against, whose scene metrics say whether the frame has
+any content in it at all.
 
 ## Workflow
 
 1. Capture or locate the exact PNGs/GIF frames under review.
-2. Create tight 2x-4x crops for every key feature under judgment, plus the full
-   screenshot for context. Crop selected units, city/town stacks, flags/poles,
+2. Keep native-size evidence and create supplementary 2x-4x crops for every
+   key feature, plus the full screenshot. Include complete endpoints and fades;
+   recheck crop bounds after geometry changes. Crop selected units, city/town
+   stacks, flags/poles,
    shadows, selection rings, labels/icons, roads, terrain features, water, and
    any artifact-prone area. If the complaint is about "too faint", "wrong
    order", or "not in perspective", the crop is mandatory.
 3. Spawn one fresh explorer with `fork_context: false`; pass only the full
-   images, the crops, and a short neutral task. Do not include the main thread
-   history, implementation details, or expected answer.
+   images, the crops, and a short neutral task. Include the approved reference
+   and user requirements when judging fidelity; withhold history, implementation
+   details, prior verdicts and the expected answer.
 4. Ask for concrete visible defects with confidence levels. Name likely risk
    categories: unit/prop depth ordering, layering, shadows, selection-marker
    contrast, ground-plane perspective, flag/pole attachment, label style and
@@ -73,6 +78,18 @@ Spawn config:
   image "verifies" a no-op. (Recorded failure: a palette pass that never
   reached the production render path — before/after were byte-identical and
   only the diff caught it.)
+- **Hand over the complete capture set, never a curated one.** Every state you
+  captured, every viewport, desktop and mobile. Choosing which shots to show is
+  the same bias the fresh pass exists to remove: you will pick the ones you
+  already believe are fine, and the weak state is exactly the one that gets
+  left out. If a state is hard to reach by hand, drive it deterministically and
+  capture it rather than omitting it.
+- **When no sub-agent is available, argue the other side yourself.** For each
+  feature under judgment, write one sentence making the strongest case that it
+  is broken, citing only what is visible in the shot — then decide. Writing the
+  case first is what makes it adversarial; deciding first and justifying after
+  is the primed inspection this skill exists to replace. Include those
+  sentences in the report so the reasoning is reviewable.
 - Never tell the sub-agent the defect you expect it to find.
 - Use the current candidate screenshot, not a stale report or baseline image.
 - Do not rely on full-page report scale for small visual features. Attach
@@ -85,7 +102,8 @@ Spawn config:
 - For animation, attach a short set of deterministic still frames first; GIFs
   are useful for human review, but still frames make specific defects easier to
   name.
-- A passing sub-agent critique does not replace direct inspection by the main
-  agent or screenshot regression gates.
+- A passing headline does not erase a reported small mismatch or uncertainty.
+  Resolve it using [Reference Landmarks](../compare-screenshots/references/reference-landmarks.md);
+  a second opinion does not replace direct inspection or regression gates.
 - If the sub-agent catches an issue the main agent missed, add that failure mode
   to the relevant feature plan or visual checklist immediately.

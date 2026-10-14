@@ -50,6 +50,44 @@ When the user moves on to build, review, or merge what the walk mapped, read
 [after the walk](references/after-the-walk.md) — the map lives on past
 planning.
 
+## Preference Checkpoint — Offer to Answer on Their Behalf
+
+Count questions the user has answered across the walk, not turns or answers
+found in the territory. After about five or six, if their preferences form a
+clear pattern and questions remain, pause the interview for this checkpoint.
+If the pattern is still unclear, continue targeted questions and offer once
+it becomes clear; do not manufacture questions just to reach the count.
+
+1. List the preferences you have inferred, grounded in their answers, and
+   invite corrections. Ask whether it would help for you to answer matching
+   questions on their behalf: **confirm or edit these preferences and opt in,
+   or keep answering yourself**. This replaces the next interview question.
+2. Wait for explicit opt-in. Confirming the preferences alone is not consent
+   to delegate; silence is not consent either. If they only confirm the
+   preferences, clarify the delegation choice once, then default to the
+   interview if it remains unanswered. If they decline, continue without
+   repeatedly offering.
+3. Once opted in, answer questions whose answers follow clearly from the
+   confirmed preferences, within the scope they delegated. Ask the user when
+   preferences conflict or a new tradeoff falls outside that scope. Investigate
+   missing facts in the territory first; ask only when it cannot resolve them.
+   Preferences cannot substitute for facts about the territory.
+4. Disclose every delegated answer as you make it: **question → answer →
+   preference and reason**, labeled **Answered by the agent on your behalf**.
+   Small batches are fine; never collapse distinct questions into a hidden
+   decision. Carry each entry into the map with that attribution, rather than
+   implying the user personally answered it. Invite corrections without
+   requiring approval of every answer.
+5. Honor corrections and withdrawal immediately. Corrections update the
+   preference summary and reopen decisions they invalidate. Withdrawal stops
+   future delegated answers; keep earlier answers attributed unless the user
+   asks to revisit them. Delegation lasts for this walk and does not
+   authorize implementation or skip the remaining quadrants.
+
+**Done when** the user has chosen whether to delegate and, if opted in, the
+confirmed preferences and delegation scope are recorded alongside the map's
+decision ledger.
+
 ## Rules
 
 - Walk the quadrants in order, one stage at a time, naming the current

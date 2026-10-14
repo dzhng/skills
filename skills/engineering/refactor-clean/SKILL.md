@@ -1,6 +1,6 @@
 ---
 name: refactor-clean
-description: Refactor cleanly instead of layering sediment. Use when a change reveals duplicated concepts, local adapters, obsolete owners, compatibility wrappers, parallel abstractions, an over-large module that has accreted many responsibilities, or "just tack this on" pressure in any code area.
+description: Refactor cleanly instead of layering sediment. Use for rename requests, stale or misleading names, legacy leftovers, changed scope, or when a change reveals duplicated concepts, local adapters, obsolete owners, redundant inputs or guards, compatibility wrappers, parallel abstractions, an over-large module that has accreted many responsibilities, or "just tack this on" pressure in any code area.
 ---
 
 # Clean Refactoring
@@ -13,21 +13,37 @@ module into the several owners it was hiding.
 
 ## Workflow
 
-1. Name the concept that lacks one clear owner — duplicated across several owners,
+1. Sweep names in every touched path, even when no structural refactor is needed.
+   Ask whether each name describes the concept's current scope. Rename misleading
+   files, symbols, imported bindings and shared exports immediately; update every
+   consumer, test, doc and agent instruction in the same pass. Keep scenario names
+   only for scenario-specific code, then search again for stale references.
+2. Name the concept that lacks one clear owner — duplicated across several owners,
    or several concepts fused into one over-loaded module. Identify the thing(s)
    that should each have one owner: environment, pricing rule, geometry source,
    state machine, data contract, renderer phase, API shape, UI state, or test
    oracle.
-2. Find every current owner and consumer. Treat wrappers, aliases, pass-local
-   constants, copied structs, and "temporary" branches as sediment until proven
-   otherwise.
-3. Promote the concept to its natural home. Pick the module that would own it from
-   scratch, then make old call sites consume that owner directly.
-4. Delete or collapse the stale path in the same pass when feasible. If a bridge must
-   remain, make it tiny, named as compatibility, and give it a removal condition.
-5. Verify behavior through consumers, not just the new module. A clean refactor is
-   only proven when the surfaces that used to diverge now report or exercise the
-   same source of truth.
+3. Find every current owner and consumer. Treat wrappers, aliases, pass-local
+   constants, copied structs, migration comments and "temporary" branches as
+   sediment until proven otherwise.
+4. Run a deletion pass before relaxing checks or making inputs optional. For each
+   input, flag, guard, fallback, and adapter in the affected path, ask what required
+   behavior breaks if it disappears. Trace its writers, transport, readers,
+   validators, and consumers; compare them with the authoritative owner. Making a
+   redundant input optional is not completion. If removing it preserves required
+   behavior, delete the mechanism and its call-site, test, and documentation residue.
+5. Promote any remaining concept to its natural home. Pick the module that would
+   own it from scratch, then make old call sites consume that owner directly.
+   Delete or collapse the stale path in the same pass.
+6. Retain compatibility only for an identified consumer and a concrete behavior
+   that removal would break. Old inputs that can safely be ignored need no parser,
+   validator, or adapter just because they may still arrive. If a bridge is needed,
+   keep it tiny and give it a removal condition; hypothetical callers do not count.
+7. Verify behavior through consumers, including affected failure and retry paths.
+   Search again for the removed mechanism across code, tests, docs, and agent
+   instructions. Finish only when each retained mechanism in the affected path
+   has a named consumer and behavior it preserves; report retained bridges and
+   their removal conditions.
 
 ## Rules
 
@@ -120,6 +136,12 @@ module into the several owners it was hiding.
   not in identifiers. The same rule kills lineage comments ("previously this
   was...", "moved from X") — they describe the diff, not the code, and rot the
   moment the referent disappears.
+  Renaming is routine maintenance, not a separate project or a reason to ask for
+  permission. Do it proactively at whatever scale the consumers require; a large
+  mechanical diff is not a reason to retain a misleading name. Distinguish internal
+  identifiers from persisted keys and external contracts: retain the latter only
+  for an identified consumer, under the compatibility rule above. Do not leave
+  internal aliases that preserve the old vocabulary.
 - **Prefer the idempotent contract over the refusal.** When an operation can be
   asked for twice — a retry after a lost response, a user clicking the same
   button again, a replayed webhook — reaching the requested end state should
