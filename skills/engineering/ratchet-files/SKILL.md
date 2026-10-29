@@ -1,6 +1,6 @@
 ---
 name: ratchet-files
-description: Ratchet source file size so every file stays small enough for an agent to read whole: find every file over a token budget, split oversized files by concept, and set up the pre-commit ratchet that stops them from growing. Use when a commit is blocked because a file is over the size budget, when asked to find or split oversized/long/god files, when a file you need to change is too large to read in one pass, or when asked to add a file-size limit or hook to a repository.
+description: "Ratchet source file size so every file stays small enough for an agent to read whole: find every file over a token budget, split oversized files by concept, and set up the pre-commit ratchet that stops them from growing. Use when a commit is blocked because a file is over the size budget, when asked to find or split oversized/long/god files, when a file you need to change is too large to read in one pass, or when asked to add a file-size limit or hook to a repository."
 ---
 
 # Ratchet Files
