@@ -147,6 +147,7 @@ when the research is ready for implementation.
 | [refactor-clean](skills/engineering/refactor-clean/SKILL.md) | Refactor by moving ownership to one clean concept instead of layering compatibility sediment beside the problem. |
 | [write-tests](skills/engineering/write-tests/SKILL.md) | Write tests one tracer bullet at a time that pin real behavior — not implementation details, config values, or lucky samples. |
 | [audit-tests](skills/engineering/audit-tests/SKILL.md) | Map contracts to independent test proof, consolidate redundant coverage, and remove test-only machinery without losing regression protection. |
+| [agent-qa](skills/engineering/agent-qa/SKILL.md) | Run selected app regressions and review evidence with advanced memidex memory and self-improvement. |
 | [audit-performance](skills/engineering/audit-performance/SKILL.md) | Find hot paths that amplify or repeat without progress, rank them by real failure risk, and prefer the smallest bounded fix that preserves healing. |
 | [ratchet-files](skills/engineering/ratchet-files/SKILL.md) | Keep every source file small enough for an agent to read whole: list files over a token budget, split them by concept, and install a pre-commit ratchet that lets oversized files shrink but never grow. |
 | [write-docs](skills/engineering/write-docs/SKILL.md) | Write docs as a glossary of principles and pointers, never a mirror of the code that will rot. |
