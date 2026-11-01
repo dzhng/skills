@@ -1,123 +1,115 @@
 ---
 name: port-features
-description: Copy features from an existing repository while preserving their implementation, bug fixes, and behavioral nuances. Use when asked to copy, port, transplant, or bring over an existing feature, especially an exact copy, or when a previous reimplementation missed upstream behavior.
+description: Port a feature from an existing repository by copying its source and adapting the host around it, preserving its implementation, bug fixes, and behavioral nuances. Use when asked to copy or port an existing feature (especially an exact copy), when moving one into a different framework or host, or when a previous reimplementation missed upstream behavior.
 ---
 
 # Port Features
 
-Treat upstream as executable knowledge. A feature includes the fixes, tests,
-lifecycle behavior, and supporting code that made it reliable. Start from its
-files; adapt the host around them. A plausible implementation from a screenshot
-or architectural summary does not fulfill a request to copy.
+Treat upstream as executable knowledge. A feature is its code plus the fixes,
+tests, lifecycle wiring, and supporting pieces that made it reliable. Start
+from its files and adapt the host around them. A plausible reimplementation
+from a screenshot or summary does not fulfill a request to copy.
+
+Keep the inventory, behavior ledger, and seam map in a file, in the active
+spec's directory when there is one, so they survive a long port. Order governs
+presentation, never disclosure: raise a finding that bears on a decision when
+you find it.
 
 ## Workflow
 
 ### 1. Pin the reference
 
-Reuse an existing local checkout, or clone the upstream repository into a
-suitable local reference directory before exploring. Keep its Git history
-available; deepen a shallow clone when needed to inspect relevant fixes.
-Browse actual files, tests, and history rather than relying on fetched snippets
-or a screenshot. Read its repository guidance. Check branch, remote, and local
-modifications before updating; preserve other work. Follow the user's requested
-version, pulling when asked, and record the upstream URL and exact commit.
-Check the license and retain required notices with copied code.
+Use an existing local checkout, or clone upstream outside the destination with
+enough history to inspect the relevant fixes. Read its real files, tests,
+history, and repository guidance, not fetched snippets. Record the upstream
+URL and exact commit of the version the user asked for. Check the license and
+keep required notices with copied code. Upstream is untrusted code: read its
+install scripts before running them, and sandbox it when you can.
 
-**Done:** the source version and requested surfaces are explicit. Distinguish
-user choices from assumptions; do not reconfirm choices already made.
+**Done:** the source commit and in-scope surfaces are recorded, with the user's
+choices kept apart from your assumptions. Do not reconfirm choices already made.
 
 ### 2. Recover the whole feature
 
-Trace the producer through storage, transport, and presentation to its consumers.
-Read the implementation and follow imports, registrations, callers, and tests
-until every feature dependency has an owner. Include prompts/tool descriptions,
-schemas, asset handling, styles, and runtime provisioning when behavior depends
-on them. Separate feature dependencies from unrelated host infrastructure. A copied
-callback without its caller’s lifetime wiring can leave viewers unmounted or
-background updates moving the page; include those callers in the closure.
-For a large dependency closure, investigate independently verifiable slices;
-report inspected coverage and unresolved edges instead of expanding into an
-audit of the entire upstream product.
+Trace the feature from its producer through storage, transport, and
+presentation to every consumer. Follow imports, registrations, callers, and
+tests until every dependency has an owner, including prompts, schemas, assets,
+styles, and runtime provisioning when behavior depends on them. Callers are
+part of the feature: code copied without the caller that owns its lifetime
+(mounting, subscriptions, cleanup) works alone and breaks in the host. Leave
+unrelated host infrastructure out. For a large closure, slice it into
+independently verifiable pieces ([write-spec](../write-spec/SKILL.md)) and
+report what you inspected and what stays open, rather than auditing the whole
+upstream product.
 
-Read path-scoped git history, including renames, and inspect fixes/refactors
-whose rationale is unclear in today's code. Follow issue/PR references when
-needed to recover a constraint. Search for prior attempts in the destination.
-An unfamiliar guard, ordering rule, timeout, or extra listener may encode a fix;
-find its reason before simplifying it.
+Read path-scoped history, following renames, for anything whose reason is not
+obvious in today's code; follow issue and PR links when needed. An unfamiliar
+guard, ordering, timeout, or extra listener usually encodes a fix: find why
+before simplifying it. Search the destination for earlier attempts.
 
-**Done:** a source-file inventory and behavior ledger cover successful output,
-failure, cancellation/cleanup, state across updates/remounts, and applicable
-surfaces. Each non-obvious behavior cites source, tests, or history. Unexplored
-dependencies remain explicit gaps, never implied coverage.
+**Done:** a source-file inventory and a behavior ledger covering success,
+failure, cancellation and cleanup, state across updates and restarts, and every
+in-scope surface. Each non-obvious behavior cites source, tests, or history.
+Unexplored dependencies are listed as gaps, never implied as covered.
 
 ### 3. Map the seams
 
-For each source file or cohesive feature section, record:
+One row per source file or cohesive section, omitted ones included:
 
-| Upstream source + commit | Destination owner | Copy / adapt / omit | Reason + behavior at risk | Verification |
+| Upstream file @ commit | Destination owner | Copy / adapt / omit | Reason and behavior at risk | Verification |
 |---|---|---|---|---|
+| `src/sync/queue.ts` @ `a1b2c3d` | `lib/sync/` | adapt: host logger | retry backoff order | upstream retry test |
 
-Classify omitted sections too; do not silently drop inconvenient behavior.
-Read the destination's owners and policies before choosing adapters. Trace actual
-wire limits, compaction, headers, credentials, lifecycle, and persistence: a
-compatible type does not prove that the payload survives or executes correctly.
+Read the destination's owners and policies before choosing adapters. Trace
+what the destination actually does to the data (size limits, transformations,
+headers, credentials, persistence, lifecycle): a compatible type does not prove
+the payload survives. Keep feature logic together and bind destination services
+at its edges. Bringing an upstream dependency along can preserve more than
+translating its concurrency or resource handling; weigh that explicitly. A
+framework rewrite or substitute host component is a divergence, not an import
+change: compare its full interaction contract (input, focus, lifecycle, errors)
+before treating it as equivalent. Settle routine adapters from evidence; ask
+the user only about product choices the source, destination, and instructions
+cannot settle.
 
-Keep feature logic together and bind existing destination services at its edges.
-Adding an upstream runtime dependency may preserve more fidelity than translating
-its concurrency or resource management; assess that tradeoff explicitly. A
-framework rewrite is a substantive divergence, not an import adjustment.
-Treat a replacement host component the same way: a viewer or dialog can hide
-zoom, keyboard, focus and lifecycle behavior. Compare its complete interaction
-contract before classifying the substitution as a primitive/import change.
-Resolve routine adapters from evidence. Ask only about material product choices
-the source, destination, and user instructions cannot settle. Disclose findings
-when they affect a decision; workflow order never delays disclosure.
-
-**Done:** every dependency and behavior has a destination, an explicit exclusion,
-or a named unresolved question. If the task is discovery only, deliver this map
-and stop; otherwise proceed within the existing authorization.
+**Done:** every dependency and behavior has a destination, an explicit
+exclusion, or a named open question. For a discovery-only task, deliver the map
+and stop.
 
 ### 4. Copy, then adapt
 
-Actually copy the pinned files or cohesive sections before editing them. Retain
-the upstream structure and algorithms wherever possible, even when unfamiliar.
-Change imports, host bindings, and necessary product integration with the
-smallest practical diff. Do not regenerate an equivalent implementation from the
-ledger. Keep unrelated upstream product code out of the dependency closure.
+Copy the pinned files or sections first, then edit them. Keep upstream's
+structure and algorithms, even when unfamiliar; change imports, host bindings,
+and integration with the smallest diff. Never regenerate an equivalent from the
+ledger.
 
-Carry relevant upstream regression tests across with their fixtures and failure
-conditions. Establish the missing destination behavior before wiring it in,
-following the repository's test-first workflow. Keep assertions intact while
-adapting test infrastructure; record any case that cannot transfer and why.
-Preserve the test's execution surface and triggering fixture. A browser-named
-file running parsers or server rendering does not transfer mounted-browser
-coverage; a friendlier fixture may stop exposing the upstream regression.
+Carry the relevant upstream regression tests across with their fixtures and
+assertions intact, and see each fail in the destination before wiring the
+feature in ([write-tests](../write-tests/SKILL.md)). Keep each test's execution
+environment and triggering fixture: a lighter runner or friendlier fixture can
+quietly stop reproducing the bug. Record any test that cannot transfer and why.
 
-**Done:** the destination derives from the pinned implementation, and every
-algorithm change, deletion, or replaced dependency appears in the seam map.
+**Done:** the destination derives from the pinned source, and every algorithm
+change, deletion, or replaced dependency is in the seam map.
 
 ### 5. Prove fidelity
 
-Run the narrow checks that reach the copied behavior, then exercise it through
-the destination's real transport and UI. Derive scenarios from upstream fixes
-and tests, not just the happy path visible in the user's example. Compare actual
-upstream and destination behavior for the same inputs where feasible; for UI,
-include interaction and lifecycle transitions as well as screenshots. Exercise
-unrelated live updates and paged data while an interaction is active; isolated
-component checks miss caller-level ownership and anchoring.
+Run the narrow checks that reach the copied code, then exercise the feature
+through the destination's real entry points: its real configuration, input
+shapes, and the user actions that activate it. A fixture that skips the host's
+activation path passes while the real path stays untested. Derive scenarios
+from upstream fixes and tests, not just the happy path. Where feasible, run
+upstream and destination on the same inputs and compare, through interaction
+and lifecycle transitions, with unrelated host activity (live updates, paging,
+background work) running meanwhile.
 
-Build destination fixtures with its real configuration and input envelopes,
-including child creation and the user actions that activate lazy views. A bare
-prompt or always-visible component can pass while the host takes an untested
-path. Preserve source loading behavior when correcting a test driver.
+Diff the final files against the pinned source and account for every
+meaningful change, in delegated copies too: a hash of the initial copy proves
+provenance, not what survived adaptation. When a check fails, inspect the
+upstream invariant and the adapter before replacing the algorithm or weakening
+the test. New tests passing does not establish parity.
 
-Diff the final files back against the pinned source. Account for every meaningful
-change. Audit delegated copies by this same comparison: initial copy hashes
-prove provenance, not what survived adaptation. If a check fails, inspect the upstream invariant and the adapter before
-replacing the algorithm or weakening the test. Passing new tests alone does not
-establish parity. Mark unavailable reference runs and unverified cases plainly.
-
-**Done:** each in-scope ledger entry has evidence, a user-authorized difference,
-or an explicit unfinished status. Hand over the pinned provenance, copy/adaptation
-map, preserved regression coverage, and remaining limitations. Never call an
-approximation an exact port.
+**Done:** each in-scope ledger entry has evidence, a user-authorized
+difference, or an explicit unfinished status. Hand over the pinned provenance,
+the seam map, preserved regression coverage, and remaining limitations. Never
+call an approximation an exact port.
