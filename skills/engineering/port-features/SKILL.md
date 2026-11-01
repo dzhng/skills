@@ -106,6 +106,11 @@ include interaction and lifecycle transitions as well as screenshots. Exercise
 unrelated live updates and paged data while an interaction is active; isolated
 component checks miss caller-level ownership and anchoring.
 
+Build destination fixtures with its real configuration and input envelopes,
+including child creation and the user actions that activate lazy views. A bare
+prompt or always-visible component can pass while the host takes an untested
+path. Preserve source loading behavior when correcting a test driver.
+
 Diff the final files back against the pinned source. Account for every meaningful
 change. Audit delegated copies by this same comparison: initial copy hashes
 prove provenance, not what survived adaptation. If a check fails, inspect the upstream invariant and the adapter before
