@@ -168,10 +168,13 @@ if (values.all) {
   process.exit(listed.length > 0 ? 1 : 0);
 }
 
+// NUL-separated, so paths come back unquoted (Git quotes non-ASCII ones).
 const origin = new Map();
-for (const line of git(["diff", "--cached", "--find-renames", "--name-status"]).split("\n")) {
-  const [status, from, to] = line.split("\t");
-  if (status?.startsWith("R")) origin.set(to, from);
+const changes = git(["diff", "--cached", "--find-renames", "--name-status", "-z"]).split("\0");
+for (let i = 0; i < changes.length - 1; i += 2) {
+  if (!changes[i].startsWith("R")) continue;
+  origin.set(changes[i + 2], changes[i + 1]); // A rename carries two paths.
+  i++;
 }
 const failures = [];
 // Git reports the root with symlinks resolved (macOS /tmp is /private/tmp).
