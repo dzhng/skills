@@ -1,15 +1,8 @@
 ---
 name: find-state-machines
-description: Find implicit state machines in an app and show where their state, transitions, and ownership are spread across the code. Use when auditing lifecycle coordination, async UI flows, or a proposed stateful refactor.
+description: Find implicit state machines, where one lifecycle's state, transitions, and ownership are scattered across flags, effects, callbacks, and async work, and make them explicit. Use when auditing lifecycle coordination, async flows, impossible states, or a proposed stateful refactor.
 ---
 
 # Find State Machines
 
-Map the behavior before suggesting a design.
-
-1. Trace related fields, refs, effects, callbacks, async work, timers, and cleanup.
-2. Describe the meaningful states, transitions, and current owner in plain language.
-3. Separate one lifecycle from independent facts that only happen to be nearby.
-4. Report a compact inventory with evidence and a disposition such as keep, clarify, or refactor.
-
-Preserve existing behavior and public contracts unless a correction is explicitly requested. Let the codebase determine the shape of any cleanup.
+Find implicit state machines: one lifecycle whose state, transitions, and ownership are spread across the code instead of held in one place. Make small fixes that preserve behavior or fix bugs right away; confirm larger restructures with the user first.
