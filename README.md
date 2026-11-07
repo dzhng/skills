@@ -149,6 +149,7 @@ when the research is ready for implementation.
 | [write-tests](skills/engineering/write-tests/SKILL.md) | Write tests one tracer bullet at a time that pin real behavior — not implementation details, config values, or lucky samples. |
 | [audit-tests](skills/engineering/audit-tests/SKILL.md) | Map contracts to independent test proof, consolidate redundant coverage, and remove test-only machinery without losing regression protection. |
 | [audit-performance](skills/engineering/audit-performance/SKILL.md) | Find hot paths that amplify or repeat without progress, rank them by real failure risk, and prefer the smallest bounded fix that preserves healing. |
+| [find-state-machines](skills/engineering/find-state-machines/SKILL.md) | Find implicit state machines and show where their state, transitions, and ownership are spread across an app. |
 | [ratchet-files](skills/engineering/ratchet-files/SKILL.md) | Keep every source file small enough for an agent to read whole: list files over a token budget, split them by concept, and install a pre-commit ratchet that lets oversized files shrink but never grow. Ships the check and a shared hook installer that covers every worktree. |
 | [write-docs](skills/engineering/write-docs/SKILL.md) | Write docs as a glossary of principles and pointers, never a mirror of the code that will rot. |
 | [code-review](skills/engineering/code-review/SKILL.md) | Audit a diff for stale names, dead references, needless complexity, and comments that narrate instead of explain — ending on a clean/not-clean verdict. |
