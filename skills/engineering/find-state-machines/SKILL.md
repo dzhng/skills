@@ -5,4 +5,4 @@ description: Find implicit state machines, where one lifecycle's state, transiti
 
 # Find State Machines
 
-Find implicit state machines: one lifecycle whose state, transitions, and ownership are spread across the code instead of held in one place. Make small fixes that preserve behavior or fix bugs right away; confirm larger restructures with the user first.
+Find implicit state machines: one lifecycle whose state, transitions, and ownership are spread across the code instead of held in one place. Make sure every non-terminal state has a guaranteed way out — failure, cancel, timeout, or recovery after restart — not just the happy-path callback. Make small fixes that preserve behavior or fix bugs right away; confirm larger restructures with the user first.
