@@ -148,6 +148,7 @@ when the research is ready for implementation.
 | [port-features](skills/engineering/port-features/SKILL.md) | Port a feature by copying its exact upstream code and editing the copy instead of rewriting it, with git history explaining each odd line before it changes. |
 | [write-tests](skills/engineering/write-tests/SKILL.md) | Write tests one tracer bullet at a time that pin real behavior — not implementation details, config values, or lucky samples. |
 | [audit-tests](skills/engineering/audit-tests/SKILL.md) | Map contracts to independent test proof, consolidate redundant coverage, and remove test-only machinery without losing regression protection. |
+| [agent-qa](skills/engineering/agent-qa/SKILL.md) | Run selected app regressions and review evidence with advanced memidex memory and self-improvement. |
 | [audit-performance](skills/engineering/audit-performance/SKILL.md) | Find hot paths that amplify or repeat without progress, rank them by real failure risk, and prefer the smallest bounded fix that preserves healing. |
 | [find-state-machines](skills/engineering/find-state-machines/SKILL.md) | Find implicit state machines and make them explicit — small safe fixes proactively, larger restructures after confirming. |
 | [ratchet-files](skills/engineering/ratchet-files/SKILL.md) | Keep every source file small enough for an agent to read whole: list files over a token budget, split them by concept, and install a pre-commit ratchet that lets oversized files shrink but never grow. Ships the check and a shared hook installer that covers every worktree. |
