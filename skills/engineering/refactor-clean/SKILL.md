@@ -22,7 +22,8 @@ module into the several owners it was hiding.
    or several concepts fused into one over-loaded module. Identify the thing(s)
    that should each have one owner: environment, pricing rule, geometry source,
    state machine, data contract, renderer phase, API shape, UI state, or test
-   oracle.
+   oracle. When a lifecycle is spread across flags, effects, and callbacks, use
+   [find-state-machines](../find-state-machines/SKILL.md).
 3. Find every current owner and consumer. Treat wrappers, aliases, pass-local
    constants, copied structs, migration comments and "temporary" branches as
    sediment until proven otherwise.
