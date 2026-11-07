@@ -40,9 +40,9 @@ the feature is *naturalized*, in its names and in the environment it runs in.
    destination really has it, measure on the real host instead of keeping the
    machinery.
 6. **Diff back.** Diff the result against the pinned source and justify every
-   change as a rename, a host binding, or an environment deletion. When a
-   carried-over test fails, fix the adapter before touching the algorithm or
-   the test.
+   change as a rename, a host binding, an environment deletion, or a deletion
+   of upstream code the ported feature doesn't use. When a carried-over test
+   fails, fix the adapter before touching the algorithm or the test.
 
 ## Rules
 
