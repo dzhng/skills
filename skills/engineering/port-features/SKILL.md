@@ -9,7 +9,7 @@ Upstream code is the spec for the feature's behavior. Every guard, ordering,
 timeout, and odd branch in it may be a bug fix someone already paid for. A
 rewrite from your understanding of the feature drops the ones you didn't notice.
 
-A port is not a copy, though. The result must read as if this project wrote it:
+A port doesn't stop at the copy. The result must read as if this project wrote it:
 the feature is *naturalized*, in its names and in the environment it runs in.
 
 1. **Start from the code.** Get a local checkout of upstream with its history,
@@ -26,11 +26,10 @@ the feature is *naturalized*, in its names and in the environment it runs in.
    itself, even where you would have written them differently. Never write your
    own version in their place.
 4. **Naturalize the names.** Convert upstream's product name and naming scheme
-   to this project's everywhere: identifiers, protocol strings, event and
-   storage keys, CSS ids, env vars, file names, comments, tests, and docs. Use
-   the destination's existing names for a concept that already has an owner
-   here. Done when a case-insensitive search for upstream's names finds them
-   only in the license notice.
+   to this project's everywhere, except names an outside system still depends
+   on. Use the destination's existing names for a concept that already has an
+   owner here. Done when a case-insensitive search for upstream's names finds
+   them only in the license notice and those outside contracts.
 5. **Naturalize the environment.** Map what upstream's host gave or lacked onto
    what this project's host gives. Logic that existed only because of
    upstream's environment is deleted, not ported: a fallback for a platform we
