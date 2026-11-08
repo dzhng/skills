@@ -68,8 +68,8 @@ module into the several owners it was hiding.
      "the consumer would then do the wrong thing" is.
   The bar is not "is this correct?" — defensive code is usually correct.
   The bar is "what breaks, for whom, if this line doesn't exist?" No
-  concrete answer → no line. To hunt for checks, guards, fallbacks and
-  compatibility machinery that protect nothing, use
+  concrete answer → no line. To roll back protective code and migrations
+  that cost more than they protect, use
   [find-overengineering](../find-overengineering/SKILL.md).
 - **Measure the change, and treat a bad size-to-behaviour ratio as a shape
   defect.** Before accepting a change, count what it actually cost — production
