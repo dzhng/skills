@@ -16,10 +16,16 @@ export const C = {
   periwinkle: "#8fb0ff",
   red: "#ff4d5e",
   green: "#3fdc8f",
-  tape: "#ffd23f",
-  print: "#0f2a8a", // blueprint ground
-  printLine: "#7fb2ff",
+  amber: "#ffb547",
+  violet: "#a98bff",
+  card: "#0e1430",
+  cardEdge: "rgba(143,176,255,0.16)",
+  bar: "rgba(143,176,255,0.22)",
 };
+
+// One colour per feature, so a feature reads as one thing wherever it sits.
+export const FEATURE = { U: C.blue, B: C.amber, A: C.violet, G: "#3a4466" } as const;
+export type Feature = keyof typeof FEATURE;
 
 export const SANS = "Inter, system-ui, sans-serif";
 export const MONO = "'JetBrains Mono', Menlo, monospace";

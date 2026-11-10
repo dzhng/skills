@@ -1,9 +1,10 @@
-// 2D type over the board, all driven by song time.
+// Type over the world, all driven by song time.
 import React from "react";
-import { COMMAND, CUE, INSTALL_CMD, STEPS, WEEK } from "../cues.ts";
-import { CALLOUTS, LAYER_COUNT, PROBLEMS } from "../world/board.ts";
+import { COMMAND, CUE, FINDS, INSTALL_CMD, SECTIONS } from "../cues.ts";
+import { guardLines } from "../scenes/Guards.tsx";
+import { largestK } from "../scenes/Giant.tsx";
 import { C, MONO, SANS } from "../theme.ts";
-import { clamp, inCubic, inOutCubic, lerp, outCubic, prog, spring, squash } from "../anim.ts";
+import { clamp, inCubic, inOutCubic, lastAt, lerp, outCubic, passed, prog, spring, squash } from "../anim.ts";
 
 type S = { s: number };
 const blur = (px: number) => (px > 0.05 ? `blur(${px}px)` : undefined);
@@ -20,39 +21,15 @@ const Word: React.FC<S & { at: number; children: React.ReactNode; style?: React.
 };
 
 // A number that rolls like an odometer when it changes.
-const Roll: React.FC<{ value: number; changedAt: number; s: number; color?: string }> = ({ value, changedAt, s, color }) => {
+const Roll: React.FC<{ value: number | string; changedAt: number; s: number; color?: string }> = ({ value, changedAt, s, color }) => {
   const p = outCubic(prog(s, changedAt, changedAt + 0.16));
   const kick = s >= changedAt ? Math.exp(-(s - changedAt) / 0.12) : 0;
   return (
     <span style={{ display: "inline-block", color, transform: `translateY(${(1 - p) * -18}px) scale(${1 + kick * 0.18})`, opacity: 0.4 + 0.6 * p }}>{value}</span>
   );
 };
-const lastAt = (times: number[], s: number) => times.filter((t) => s >= t).at(-1) ?? -1;
 
-// ---------- 1 · the tug, and 7 · the tug again ----------
-// "1 change → N places", counting the places the change drags along.
-export const TugCount: React.FC<S> = ({ s }) => {
-  const first = s >= CUE.tug + 0.2 && s < CUE.slack + 0.7;
-  const second = s >= CUE.tug2 + 0.2 && s < CUE.weeks[0] - 0.05;
-  if (!first && !second) return null;
-  const at = first ? CUE.tug + 0.2 : CUE.tug2 + 0.2;
-  const end = first ? CUE.slack + 0.7 : CUE.weeks[0] - 0.05;
-  const times = first ? [at, ...CUE.yanks] : [at];
-  const n = times.filter((t) => s >= t).length;
-  const enter = spring(s, at, 2.4, 0.5);
-  const exit = inCubic(prog(s, end - 0.25, end));
-  const color = first ? (n > 1 ? C.red : C.fg) : C.green;
-  return (
-    <div style={{ position: "absolute", left: 110, top: 110, fontFamily: SANS, fontWeight: 900, fontSize: 104, letterSpacing: -4, lineHeight: 1.02, color: C.fg, textShadow: HALO, opacity: clamp(enter) * (1 - exit), transform: `translateY(${(1 - enter) * 40}px)`, filter: blur(exit * 10) }}>
-      <div>1 change</div>
-      <div style={{ color: C.muted }}>
-        → <Roll value={n} changedAt={lastAt(times, s)} s={s} color={color} /> <span style={{ color }}>{n === 1 ? "place" : "places"}</span>
-      </div>
-    </div>
-  );
-};
-
-// ---------- 2 · title ----------
+// ---------- title ----------
 export const Title: React.FC<S & { poster?: boolean }> = ({ s, poster }) => {
   if (!poster && (s < CUE.drop || s > CUE.clear + 0.5)) return null;
   const slam = poster ? 1 : clamp((s - CUE.drop) / 0.1);
@@ -80,82 +57,88 @@ export const Title: React.FC<S & { poster?: boolean }> = ({ s, poster }) => {
   );
 };
 
-// ---------- the findings feed ----------
-// Each slop pattern the scan hits slams in top-left; older ones step down and fade.
-export const Findings: React.FC<S> = ({ s }) => {
-  const live = CALLOUTS.filter((p) => s >= p.tagAt && s < p.tagAt + 2.4 && s < (p.layer === 1 ? CUE.reveal + 0.6 : CUE.fixes[3].lift)).reverse();
-  if (!live.length) return null;
-  return (
-    <div style={{ position: "absolute", left: 100, top: 96 }}>
-      {live.map((p, i) => {
-        const pop = spring(s, p.tagAt, 2.8, 0.42);
-        const out = inCubic(prog(s, p.tagAt + 2.0, p.tagAt + 2.4));
-        const y = live.slice(0, i).reduce((a, q) => a + 104 * outCubic(prog(s, q.tagAt, q.tagAt + 0.12)), 0);
-        const hit = Math.exp(-(s - p.tagAt) / 0.15);
-        const deep = p.layer === 2;
-        return (
-          <div key={p.id} style={{ position: "absolute", left: 0, top: y, transform: `translate(${(1 - pop) * -120}px, ${(1 - clamp(pop)) * -30}px) scale(${(i === 0 ? 1 : 0.86) * (1 + hit * 0.08)})`, transformOrigin: "left center", opacity: clamp(pop * 2) * (1 - out) * (i === 0 ? 1 : 0.55), display: "flex", alignItems: "center", gap: 20, padding: "14px 34px 14px 26px", borderRadius: 60, background: deep ? "rgba(255,77,94,0.95)" : "rgba(255,255,255,0.96)", boxShadow: `0 10px 40px rgba(0,0,0,0.45), 0 0 ${hit * 60}px rgba(255,77,94,${hit})`, whiteSpace: "nowrap" }}>
-            <div style={{ width: 26, height: 26, borderRadius: 13, background: deep ? "#fff" : C.red, boxShadow: `0 0 ${10 + hit * 20}px ${C.red}` }} />
-            <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 56, letterSpacing: -1.5, color: deep ? "#fff" : "#0b1022" }}>{p.label}</div>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
+// ---------- the header ----------
+// One per shot, bottom-left: what is happening, with a live count on the right.
+type Head = { key: string; at: number; until: number; kicker: string; sub?: string; label: string; labelAt?: number; value: string | number; changed: number; caption: string; color: string };
 
-// ---------- section headers ----------
-const found = (layer: 1 | 2, s: number) => PROBLEMS.filter((p) => p.layer === layer && s >= p.tagAt).length;
-const cleared = (layer: 1 | 2, s: number) => PROBLEMS.filter((p) => p.layer === layer && s >= CUE.fixes[p.fix].land).length;
-
-export const StepHeader: React.FC<S> = ({ s }) => {
-  const step = STEPS.find((t) => s >= t.at && s < t.until);
-  if (!step) return null;
-  const i = STEPS.indexOf(step);
-  const enter = spring(s, step.at + 0.05, 2.4, 0.55);
-  const exit = inCubic(prog(s, step.until - 0.25, step.until));
-  // The live counter: slop found, then slop left, then the week.
-  let value: number, changed: number, caption: string, color: string;
-  if (i < 2) {
-    const layer = (i + 1) as 1 | 2;
-    const fixes = layer === 1 ? [0, 1, 2] : [3, 4];
-    const cleaning = s >= CUE.fixes[fixes[0]].lift;
-    if (!cleaning) {
-      value = found(layer, s);
-      changed = lastAt(PROBLEMS.filter((p) => p.layer === layer).map((p) => p.tagAt), s);
-      caption = "found";
-    } else {
-      value = LAYER_COUNT[layer] - cleared(layer, s);
-      changed = lastAt(fixes.map((f) => CUE.fixes[f].land), s);
-      caption = value === 0 ? "clean" : "left";
-    }
-    color = value === 0 && cleaning ? C.green : value > 0 ? C.red : C.fg;
-  } else {
-    const w = CUE.weeks.filter((t) => s >= t).length;
-    value = w;
-    changed = lastAt([...CUE.weeks], s);
-    const swept = s >= CUE.weeks[w - 1] + WEEK.sweep[1];
-    caption = swept ? "week · clean" : "week";
-    color = swept ? C.green : C.fg;
+function headAt(s: number): Head | null {
+  const { hits, request, sessions } = CUE;
+  if (s >= 0 && s < SECTIONS.open[1] - 0.2) {
+    const asked = s >= request;
+    const n = passed(hits, s);
+    return asked
+      ? { key: "change", at: request, until: SECTIONS.open[1] - 0.2, kicker: "the problem", label: "One small change", value: n || "?", changed: lastAt(hits, s), caption: n === 1 ? "place to edit" : "places to edit", color: n > 1 ? C.red : C.fg }
+      : { key: "sessions", at: 0, until: request, kicker: "the problem", label: "40 AI sessions later", value: Math.max(1, passed(sessions, s)) * 10, changed: lastAt(sessions, s), caption: "sessions", color: C.fg };
   }
+  if (s >= CUE.matchCut + 0.1 && s < SECTIONS.payoff[1] - 0.2) {
+    return { key: "payoff", at: CUE.matchCut + 0.1, until: SECTIONS.payoff[1] - 0.2, kicker: "after /refactor-codebase", label: "Same change", value: s >= CUE.hit2 ? 1 : "?", changed: CUE.hit2, caption: "place to edit", color: C.green };
+  }
+  const f = FINDS.find((x) => s >= x.at && s < x.until);
+  if (!f) return null;
+  const fixed = f.fixed !== null && s >= f.fixAt;
+  const base = { key: fixed ? f.fixed! : f.label, at: f.at, until: f.until, kicker: f.skill === null ? "every week" : "/refactor-codebase", sub: f.skill || undefined, label: fixed ? f.fixed! : f.label, labelAt: fixed ? f.fixAt : f.at + 0.05 };
+  switch (FINDS.indexOf(f)) {
+    case 0: {
+      const { found, land } = CUE.scatter;
+      return s >= land
+        ? { ...base, value: 1, changed: land, caption: "folder per feature", color: C.green }
+        : { ...base, value: Math.max(1, passed(found, s)), changed: lastAt(found, s), caption: "folders for one feature", color: passed(found, s) > 1 ? C.red : C.fg };
+    }
+    case 1: {
+      const n = guardLines(s);
+      const done = s >= CUE.guards.peel[5];
+      return { ...base, value: n, changed: lastAt([...CUE.guards.wrap, ...CUE.guards.peel].sort((x, y) => x - y), s), caption: n === 1 ? "line" : "lines", color: done ? C.green : n > 1 ? C.red : C.fg };
+    }
+    case 2: {
+      const { collapse, jam } = CUE.states;
+      return s >= collapse + 0.3
+        ? { ...base, value: 1, changed: collapse + 0.3, caption: "state machine", color: C.green }
+        : { ...base, value: 4, changed: s >= jam ? jam : -1, caption: "flags, 4 files", color: s >= jam ? C.red : C.fg };
+    }
+    case 3: {
+      const k = largestK(s);
+      const split = s >= CUE.giant.split + 0.3;
+      return { ...base, value: `${k}k`, changed: split ? CUE.giant.split + 0.3 : -1, caption: split ? "tokens, largest file" : "tokens in one file", color: split ? C.green : k > 8 ? C.red : C.fg };
+    }
+    case 4: {
+      const n = s >= CUE.tests.caught ? 1 : 0;
+      return { ...base, value: n, changed: CUE.tests.caught, caption: "bugs caught", color: n ? C.green : s >= CUE.tests.bug[0] ? C.red : C.fg };
+    }
+    default: {
+      const w = passed(CUE.weeks, s);
+      return { ...base, value: w, changed: lastAt(CUE.weeks, s), caption: "week", color: C.fg };
+    }
+  }
+}
+
+export const Header: React.FC<S> = ({ s }) => {
+  const h = headAt(s);
+  if (!h) return null;
+  const enter = spring(s, h.at + 0.05, 2.4, 0.55);
+  const exit = inCubic(prog(s, h.until - 0.25, h.until));
   return (
     <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 330, opacity: 1 - exit, filter: blur(exit * 8) }}>
-      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(4,6,14,0.82) 0%, rgba(4,6,14,0) 100%)", opacity: clamp(enter) }} />
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(4,6,14,0.9) 0%, rgba(4,6,14,0.6) 45%, rgba(4,6,14,0) 100%)", opacity: clamp(enter) }} />
       <div style={{ position: "absolute", left: 100, bottom: 80, transform: `translateX(${(1 - enter) * -60}px)`, opacity: clamp(enter * 1.5) }}>
-        <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 30, color: i === 1 ? "#ff8a96" : C.periwinkle, letterSpacing: 3 }}>{step.n}</div>
-        <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 80, letterSpacing: -2.5, color: C.fg, textShadow: HALO, whiteSpace: "nowrap" }}>{step.label}</div>
+        <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 34, color: C.periwinkle, letterSpacing: h.kicker.includes("/") ? 0 : 3, textTransform: h.kicker.includes("/") ? "none" : "uppercase", whiteSpace: "nowrap" }}>
+          {h.kicker}
+          {h.sub && <span style={{ color: "#fff" }}> › {h.sub}</span>}
+        </div>
+        <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 84, letterSpacing: -2.5, color: C.fg, textShadow: HALO, whiteSpace: "nowrap" }}>
+          <Word key={h.key} s={s} at={h.labelAt ?? h.at + 0.05}>{h.label}</Word>
+        </div>
       </div>
       <div style={{ position: "absolute", right: 110, bottom: 74, textAlign: "right", opacity: clamp(enter * 1.5), transform: `translateX(${(1 - enter) * 60}px)` }}>
         <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: 168, lineHeight: 0.9, letterSpacing: -6, fontVariantNumeric: "tabular-nums", textShadow: HALO }}>
-          <Roll value={value} changedAt={changed} s={s} color={color} />
+          <Roll value={h.value} changedAt={h.changed} s={s} color={h.color} />
         </div>
-        <div style={{ fontFamily: MONO, fontSize: 28, color: C.muted, marginTop: 6 }}>{caption}</div>
+        <div style={{ fontFamily: MONO, fontWeight: 500, fontSize: 34, color: "#aeb8dc", marginTop: 6 }}>{h.caption}</div>
       </div>
     </div>
   );
 };
 
-// ---------- 7 · the claim ----------
+// ---------- the claim ----------
 export const Claim: React.FC<S> = ({ s }) => {
   if (s < CUE.slam || s > CUE.lockup) return null;
   const out = inOutCubic(prog(s, CUE.lockup - 0.4, CUE.lockup));
@@ -174,7 +157,7 @@ export const Claim: React.FC<S> = ({ s }) => {
   );
 };
 
-// ---------- 8 · lockup ----------
+// ---------- lockup ----------
 export const Lockup: React.FC<S> = ({ s }) => {
   if (s < CUE.lockup) return null;
   const p = spring(s, CUE.lockup, 2.2, 0.5);
@@ -191,7 +174,7 @@ export const Lockup: React.FC<S> = ({ s }) => {
       <div style={{ fontFamily: MONO, fontWeight: 500, fontSize: 46, color: C.fg, padding: "18px 36px", borderRadius: 18, background: "rgba(14,20,44,0.85)", border: `2px solid ${C.blue}`, boxShadow: "0 0 40px rgba(43,82,245,0.45)", opacity: clamp(cmd * 2), transform: `translateY(${(1 - cmd) * 24}px)` }}>
         <span style={{ color: C.periwinkle }}>❯ </span>{COMMAND}
       </div>
-      <div style={{ fontFamily: MONO, fontSize: 32, color: C.muted, opacity: clamp(inst * 2), transform: `translateY(${(1 - inst) * 20}px)` }}>{INSTALL_CMD}</div>
+      <div style={{ fontFamily: MONO, fontWeight: 500, fontSize: 42, color: "#c9d4ff", opacity: clamp(inst * 2), transform: `translateY(${(1 - inst) * 20}px)` }}>{INSTALL_CMD}</div>
     </div>
   );
 };

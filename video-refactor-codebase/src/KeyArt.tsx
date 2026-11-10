@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react";
 import { AbsoluteFill, continueRender, delayRender } from "remotion";
 import { CUE, COMMAND } from "./cues.ts";
 import { C, MONO, SANS, fontsReady } from "./theme.ts";
-import { World } from "./world/World.tsx";
+import { World } from "./World.tsx";
 
-// Key-art still for the headline, over the clean board.
+// Key-art still for the headline, over the state machine the flags became.
 export const KeyArt: React.FC = () => {
   const [handle] = useState(() => delayRender("fonts"));
   const [ready, setReady] = useState(false);
@@ -17,8 +17,8 @@ export const KeyArt: React.FC = () => {
   if (!ready) return null;
   return (
     <AbsoluteFill style={{ background: C.bg }}>
-      <World s={CUE.weeks[1] + 0.35} />
-      <AbsoluteFill style={{ background: "radial-gradient(ellipse at 50% 42%, rgba(4,6,14,0.35) 0%, rgba(4,6,14,0.8) 75%)" }} />
+      <World s={CUE.states.run[1] + 0.05} />
+      <AbsoluteFill style={{ background: "radial-gradient(ellipse at 50% 42%, rgba(4,6,14,0.55) 0%, rgba(4,6,14,0.85) 75%)" }} />
       <div style={{ position: "absolute", left: 0, right: 0, top: 210, textAlign: "center", fontFamily: SANS, fontWeight: 900, fontSize: 230, lineHeight: 0.98, letterSpacing: -10, color: "#fff", textShadow: "0 0 80px rgba(4,6,16,0.95)" }}>
         <div>De-slop your</div>
         <div style={{ color: C.periwinkle }}>codebase.</div>

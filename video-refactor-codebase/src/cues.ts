@@ -1,4 +1,4 @@
-// The one timing source. The 3D board, the type layers, and the synthesized
+// The one timing source. The scenes, the type layers, and the synthesized
 // score all read it, so every hit on screen lands on a hit in the mix. Times
 // are song seconds; the video adds PREROLL in front for the feed thumbnail.
 
@@ -12,14 +12,15 @@ export const DURATION = PREROLL + SONG_END;
 
 // Arrangement, in 2s bars.
 export const SECTIONS = {
-  intro: [0, 6], // the tug: one change drags six modules
-  dropA: [6, 10], // title
-  scan: [10, 18], // layer 1: the scan names the slop
-  clean: [18, 24], // layer 1 cleared, one kind of slop per bar
-  deep: [24, 26], // layer 2: a deeper scan finds the debt under it
-  gather: [26, 32], // layer 2 cleared: each feature lands in one place
-  payoff: [32, 36], // the tug again
-  weeks: [36, 44], // slop creeps back; run it again
+  open: [0, 6], // the problem: one change lands in seven places
+  title: [6, 10],
+  scatter: [10, 16], // one feature spread across five folders
+  guards: [16, 20], // guards nothing needs
+  states: [20, 26], // hidden state machines
+  giant: [26, 30], // files too big to read
+  tests: [30, 36], // tests that prove nothing
+  payoff: [36, 40], // the same change lands in one place
+  weeks: [40, 44], // slop creeps back; run it again
   claim: [44, 48],
   outro: [48, SONG_END],
 } as const;
@@ -29,44 +30,45 @@ export const INSTALL_CMD = "npx skills add dzhng/skills";
 
 const range = (start: number, step: number, n: number) => Array.from({ length: n }, (_, i) => start + i * step);
 
-// One fix = one mechanism. `lift` starts it, `land` is the downbeat it lands on,
-// `stamp` (gathers only) is the review stamp.
-export type Fix = { lift: number; land: number; stamp: number };
-const fix = (lift: number, travel: number): Fix => ({ lift, land: lift + travel, stamp: lift + travel + 0.75 });
-
 export const CUE = {
-  // 1 · The tug: one change drags the same feature out of five other places.
-  tug: 2.0,
-  yanks: [3.0, 3.25, 3.5, 3.75, 4.0],
-  slack: 5.0,
+  // 0 · The problem: sessions pile up, then one change hits seven places.
+  sessions: [0.5, 1.0, 1.5, 2.0],
+  request: 2.5,
+  hits: range(2.75, 0.25, 7),
   riser1: [4.5, 6.0],
 
-  // 2 · Drop: the name slams; the command types.
+  // Title: the name slams; the command types.
   drop: 6.0,
   tagWords: [6.75],
   typing: range(7.5, 0.6 / COMMAND.length, COMMAND.length),
   enter: 8.25,
   clear: 9.5,
 
-  // 3 · Layer 1: the scan names the slop as it passes.
-  scan: [10.5, 15.5],
-  reveal: 16.0,
+  // 1 · One feature, five folders: the pieces light up, then regroup by feature.
+  scatter: { found: range(10.5, 0.25, 5), more: [12.0, 12.5], lift: 13.25, land: 14.0, link: 14.4 },
 
-  // 4 · Layer 1 cleared: tape, wrappers, needless links; then the two gathers.
-  fixes: [fix(18.0, 0.5), fix(20.0, 0.5), fix(22.0, 0.5), fix(26.0, 0.75), fix(28.0, 0.75)],
+  // 2 · Guards: rings of defensive code wrap one line, then peel off.
+  guards: { wrap: range(16.2, 0.2, 6), peel: range(17.6, 0.2, 6) },
 
-  // 5 · Layer 2: a red scan sweeps back under the floor.
-  xray: 24.0,
-  scan2: [24.25, 25.75],
+  // 3 · Hidden state machines: flags flip from everywhere, jam, then become one machine.
+  states: { flips: range(20.25, 0.25, 7), jam: 22.0, collapse: 23.5, edges: [24.0, 24.5], run: [24.75, 25.4] },
 
-  // 6 · The tug again: the feature lifts as one block.
-  matchCut: 32.0,
-  tug2: 32.5,
+  // 4 · Files too big to read: one file outgrows a read, then splits on its seams.
+  giant: { grow: [26.0, 27.25], seams: [27.75, 28.0, 28.25], split: 28.4, checks: range(28.85, 0.125, 4) },
 
-  // 7 · Every week: new slop creeps in, a quick sweep clears it.
-  weeks: [36.0, 38.0, 40.0, 42.0],
+  // 5 · Tests that prove nothing: a bug falls through a green wall; after the
+  // audit, one test catches it.
+  tests: { bug: [31.0, 32.4], merge: range(32.75, 0.25, 4), bug2: 34.0, caught: 34.5, fixed: 35.0 },
 
-  // 8 · The claim and the lockup.
+  // Payoff: the same change, one place.
+  matchCut: 36.0,
+  request2: 36.5,
+  hit2: 37.0,
+
+  // Every week slop creeps back in; each run takes it out.
+  weeks: [40.0, 41.0, 42.0, 43.0],
+
+  // The claim and the lockup.
   slam: 44.0,
   slam2: 44.5,
   lockup: 48.0,
@@ -76,12 +78,16 @@ export const CUE = {
   finalHit: 50.0,
 } as const;
 
-// Within each week: slop grows in, then the sweep crosses the board.
-export const WEEK = { creep: [0.1, 0.7], sweep: [0.9, 1.5] } as const;
+// Within each week: slop creeps in, then the run takes it out.
+export const RUN_AT = 0.75;
 
-// Section headers, bottom-left.
-export const STEPS = [
-  { at: SECTIONS.scan[0], until: SECTIONS.deep[0], n: "LAYER 1", label: "AI slop" },
-  { at: SECTIONS.deep[0], until: SECTIONS.payoff[0], n: "LAYER 2", label: "The debt under it" },
-  { at: SECTIONS.weeks[0], until: SECTIONS.claim[0], n: "EVERY WEEK", label: "Slop creeps back" },
-];
+// Find headers, bottom-left: the skill that hunts it, what it finds, and
+// what it leaves once the fix lands.
+export const FINDS = [
+  { at: SECTIONS.scatter[0], until: SECTIONS.scatter[1], skill: "", label: "One feature, five folders", fixed: "One folder per feature", fixAt: CUE.scatter.land },
+  { at: SECTIONS.guards[0], until: SECTIONS.guards[1], skill: "find-overengineering", label: "Guards nothing needs", fixed: "Just the real work", fixAt: CUE.guards.peel[5] + 0.2 },
+  { at: SECTIONS.states[0], until: SECTIONS.states[1], skill: "find-state-machines", label: "Hidden state machines", fixed: "One explicit state machine", fixAt: CUE.states.collapse + 0.3 },
+  { at: SECTIONS.giant[0], until: SECTIONS.giant[1], skill: "ratchet-files", label: "Files too big to read", fixed: "Files read in one pass", fixAt: CUE.giant.split + 0.3 },
+  { at: SECTIONS.tests[0], until: SECTIONS.tests[1], skill: "audit-tests", label: "Tests that prove nothing", fixed: "Tests that catch the bug", fixAt: CUE.tests.caught },
+  { at: SECTIONS.weeks[0], until: SECTIONS.weeks[1], skill: null, label: "Slop creeps back", fixed: null, fixAt: Infinity },
+] as const;

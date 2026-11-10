@@ -34,8 +34,10 @@ export function squash(s: number, start: number, amount = 0.22): [number, number
 }
 
 const within = (s: number, [a, b]: readonly number[]) => s >= a && s < b;
+// The kick plays from the drop on, except the bar the state machine jams and
+// the half-time payoff.
 export const kickOn = (s: number) =>
-  within(s, SECTIONS.dropA) || within(s, SECTIONS.scan) || within(s, SECTIONS.clean) || within(s, SECTIONS.gather) || within(s, SECTIONS.weeks) || within(s, SECTIONS.claim);
+  s >= SECTIONS.title[0] && s < SECTIONS.outro[0] && !within(s, [CUE.states.jam, CUE.states.collapse]) && !within(s, SECTIONS.payoff);
 
 // 1 on each kick, decaying before the next.
 export function kick(s: number) {
@@ -44,11 +46,16 @@ export function kick(s: number) {
 }
 
 export const IMPACTS: [number, number][] = [
-  ...CUE.yanks.map((t, i): [number, number] => [t, 0.25 + i * 0.08]),
-  [CUE.slack, 0.6],
+  ...CUE.hits.map((t, i): [number, number] => [t, 0.2 + i * 0.05]),
   [CUE.drop, 1.2],
-  ...CUE.fixes.map((f, i): [number, number] => [f.land, i >= 3 ? 1.0 : 0.5]),
-  [CUE.xray, 0.5],
+  [CUE.scatter.land, 0.9],
+  ...CUE.guards.peel.map((t): [number, number] => [t, 0.3]),
+  [CUE.states.jam, 0.9],
+  [CUE.states.collapse, 0.7],
+  ...CUE.giant.seams.map((t): [number, number] => [t, 0.35]),
+  [CUE.giant.split, 0.6],
+  [CUE.tests.caught, 1.0],
+  [CUE.matchCut, 0.5],
   [CUE.slam, 1.3],
   [CUE.lockup, 0.8],
 ];
@@ -67,5 +74,20 @@ export function shake(s: number) {
   return { x, y, r };
 }
 
-// Layer 2: the floor goes red and see-through while the deep scan runs.
-export const xray = (s: number) => inOutCubic(prog(s, CUE.xray - 0.1, CUE.xray + 0.25)) * (1 - inOutCubic(prog(s, CUE.fixes[3].lift - 0.2, CUE.fixes[3].lift + 0.2)));
+// Seeded random, so every frame renders the same.
+export function rng(seed: number) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Count of times already passed, and the latest one.
+export const passed = (times: readonly number[], s: number) => times.filter((t) => s >= t).length;
+export const lastAt = (times: readonly number[], s: number) => times.filter((t) => s >= t).at(-1) ?? -1;
+// Decaying pulse after `t`.
+export const hit = (s: number, t: number, tau = 0.15) => (s >= t ? Math.exp(-(s - t) / tau) : 0);

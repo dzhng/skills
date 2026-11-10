@@ -1,10 +1,8 @@
 // Synthesizes the soundtrack from the cue sheet: a 120 BPM synth-pop bed plus
 // one sound per on-screen event. Writes public/raw.wav; master.ts loudnorms it.
 import { writeFileSync } from "node:fs";
-import {
-  BAR, BEAT, CUE, DURATION, PREROLL, SECTIONS, SONG_END, WEEK,
-} from "../src/cues.ts";
-import { CALLOUTS, FIX, PROBLEMS, WEEKLY } from "../src/world/board.ts";
+import { BAR, BEAT, CUE, DURATION, PREROLL, RUN_AT, SECTIONS, SONG_END } from "../src/cues.ts";
+import { kickOn } from "../src/anim.ts";
 
 const SR = 48000;
 const N = Math.ceil(DURATION * SR);
@@ -63,7 +61,6 @@ const CHORDS = [
   { root: 43, notes: [55, 59, 62, 67] },
 ];
 const chordAt = (s: number) => CHORDS[Math.floor(Math.max(0, s) / BAR) % 4];
-const kickOn = (s: number) => [SECTIONS.dropA, SECTIONS.scan, SECTIONS.clean, SECTIONS.gather, SECTIONS.weeks, SECTIONS.claim].some((r) => inRange(s, r));
 const kicks: number[] = [];
 for (let s = 0; s < SONG_END; s += BEAT) if (kickOn(s)) kicks.push(s);
 
@@ -222,10 +219,6 @@ function zap(s: number, gain = 1) {
     return lp(saw(f * t) + noise() * 0.3, 6000 * Math.exp(-t / 0.1) + 300) * env(t, 0.001, 0.09);
   }, 0.35 * gain, (noise() * 0.6), 0.4);
 }
-function rumble(s: number, dur: number, gain = 1) {
-  const lp = svf("lp", 0.8);
-  place(s, dur, (_, t) => lp(noise(), 90 + 200 * (t / dur)) * 3 * Math.sin(Math.PI * Math.min(1, t / dur)), 0.5 * gain);
-}
 function subDrop(s: number, gain = 1) {
   place(s, 1.2, (_, t) => Math.sin(2 * Math.PI * (28 * t + 40 * 0.4 * (1 - Math.exp(-t / 0.4)))) * env(t, 0.005, 0.5), 0.6 * gain);
 }
@@ -235,27 +228,9 @@ function scratch(s: number) {
 }
 
 
-// Taut-cable twang: a plucked low string that bends up as it's yanked.
-function twang(s: number, gain = 1, pan = 0) {
-  const lp = svf("lp", 2);
-  place(s, 0.6, (_, t) => {
-    const f = 70 * (1 + 0.6 * (1 - Math.exp(-t / 0.05)));
-    return lp(saw(f * t) + 0.5 * saw(f * 2.01 * t), 2400 * Math.exp(-t / 0.12) + 200) * env(t, 0.001, 0.2);
-  }, 0.4 * gain, pan, 0.3);
-}
-// Metal hook latching on.
+// Metal clamp latching on.
 function clank(s: number, gain = 1) {
   place(s, 0.5, (_, t) => [1, 2.76, 5.4, 8.9].reduce((a, k, i) => a + Math.sin(2 * Math.PI * 620 * k * t) * Math.exp(-t / (0.12 / (i + 1))), 0) * env(t, 0.0005, 0.25) * 0.5, 0.3 * gain, 0.1, 0.4);
-}
-// The scan beam: a band of noise that tracks the beam across the board.
-function scanHum(s0: number, s1: number) {
-  const bp = svf("bp", 4);
-  const dur = s1 - s0;
-  place(s0, dur, (_, t) => {
-    const p = t / dur;
-    const edge = Math.min(1, t / 0.2, (dur - t) / 0.3);
-    return (bp(noise(), 900 + 2600 * p) * 1.2 + Math.sin(2 * Math.PI * (220 + 110 * p) * t) * 0.15) * edge;
-  }, 0.3, 0, 0.3);
 }
 // Tags burning off when a fix lands.
 function crackle(s: number, dur = 0.6, gain = 1) {
@@ -265,13 +240,14 @@ function crackle(s: number, dur = 0.6, gain = 1) {
 
 // ---------- the bed ----------
 const drumsOn = (s: number) => kickOn(s);
-const HEAVY = [CUE.drop, CUE.slam, CUE.fixes[3].land, CUE.fixes[4].land];
+const HEAVY = [CUE.drop, CUE.scatter.land, CUE.states.collapse, CUE.giant.split, CUE.tests.caught, CUE.slam];
 for (const k of kicks) kick(k, HEAVY.some((t) => Math.abs(t - k) < 0.01) ? 1.2 : 1);
+const JAM = [CUE.states.jam, CUE.states.collapse];
 for (let s = 0; s < SONG_END; s += BEAT) {
   const beat = Math.round(s / BEAT) % 4;
-  if (drumsOn(s) && (beat === 1 || beat === 3)) clap(s, inRange(s, SECTIONS.scan) ? 0.8 : 1);
-  // Heartbeat sub under the tug, the deep scan, and the payoff.
-  if ((inRange(s, SECTIONS.intro) && s > 0.4 && s < CUE.slack) || inRange(s, SECTIONS.deep) || inRange(s, SECTIONS.payoff)) place(s, 0.3, (_, t) => Math.sin(2 * Math.PI * 50 * t) * env(t, 0.004, 0.09), 0.45);
+  if (drumsOn(s) && (beat === 1 || beat === 3)) clap(s);
+  // Heartbeat sub under the opening, the jam, and the payoff.
+  if ((inRange(s, SECTIONS.open) && s > 0.4) || inRange(s, JAM) || inRange(s, SECTIONS.payoff)) place(s, 0.3, (_, t) => Math.sin(2 * Math.PI * 50 * t) * env(t, 0.004, 0.09), 0.45);
 }
 for (let s = 0; s < SONG_END; s += BEAT / 4) {
   const sixteenth = Math.round(s / (BEAT / 4)) % 4;
@@ -280,57 +256,73 @@ for (let s = 0; s < SONG_END; s += BEAT / 4) {
     else hat(s, false, sixteenth === 0 ? 0.5 : 0.8, -0.25);
   } else if (inRange(s, SECTIONS.payoff) && sixteenth === 2) hat(s, false, 0.4, 0.2);
 }
-// Snare roll into the gathers and into the weeks.
-for (const [r0, r1] of [[24.0, 26.0], [34.0, 36.0]]) {
+// Snare rolls into the machine and out of the payoff.
+for (const [r0, r1] of [[CUE.states.collapse - 0.75, CUE.states.collapse], [38.0, 40.0]]) {
   for (let s = r0; s < r1; ) {
     const p = (s - r0) / (r1 - r0);
     clap(s, 0.3 + 0.6 * p);
-    s += p < 0.5 ? BEAT : p < 0.75 ? BEAT / 2 : BEAT / 4;
+    s += p < 0.5 ? BEAT / 2 : BEAT / 4;
   }
 }
-// Bass: pumping eighths wherever the kick plays.
+// Bass: pumping eighths wherever the kick plays; long roots under the jam and payoff.
 for (let s = 0; s < SONG_END; s += BEAT / 2) {
   const { root } = chordAt(s);
   if (drumsOn(s)) {
     const off = Math.round(s / (BEAT / 2)) % 2 === 1;
     bassNote(s, root + (off ? 12 : 0), BEAT / 2);
-  } else if ((inRange(s, SECTIONS.deep) || inRange(s, SECTIONS.payoff)) && Math.abs((s / BAR) % 1) < 0.01) bassNote(s, root, BAR * 0.9);
+  } else if ((inRange(s, JAM) || inRange(s, SECTIONS.payoff)) && Math.abs((s / BAR) % 1) < 0.01) bassNote(s, root, BAR * 0.9);
 }
-// Pad: shut in the slop, open in the drops, dark under the floor, wide at the end.
+// Pad: shut in the opening, choked in the jam, wide at the end.
 pad(0, SONG_END, (s) => {
   if (s < 6) return 250 + 900 * (s / 6) ** 2;
-  if (inRange(s, SECTIONS.deep)) return 700 + 3000 * ((s - 24) / 2) ** 2;
-  if (inRange(s, SECTIONS.payoff)) return 1200 + (s > 34 ? 3000 * ((s - 34) / 2) ** 2 : 0);
+  if (inRange(s, JAM)) return 500 + 2200 * ((s - JAM[0]) / (JAM[1] - JAM[0])) ** 2;
+  if (inRange(s, SECTIONS.payoff)) return 1200 + (s > 38 ? 3000 * ((s - 38) / 2) ** 2 : 0);
   if (s >= SECTIONS.outro[0]) return 3200;
   return 2700;
 }, 1);
-// Arp: sixteenths over chord tones in the drops, softer under the scan.
+// Arp: sixteenths over chord tones wherever the kick plays, softer in the payoff.
 for (let s = 0; s < SECTIONS.outro[0]; s += BEAT / 4) {
   const on = drumsOn(s) || inRange(s, SECTIONS.payoff);
   if (!on) continue;
-  const soft = inRange(s, SECTIONS.scan) || inRange(s, SECTIONS.payoff);
+  const soft = inRange(s, SECTIONS.payoff);
   const { notes } = chordAt(s);
   const i = Math.round(s / (BEAT / 4));
   const n = notes[[0, 1, 2, 3, 2, 1, 3, 2][i % 8]] + 12;
-  pluck(s, n, soft ? 0.09 : 0.13, soft ? 1500 : 3500, i % 2 ? 0.35 : -0.35);
+  pluck(s, n, soft ? 0.09 : 0.12, soft ? 1500 : 3500, i % 2 ? 0.35 : -0.35);
 }
 for (const n of CHORDS[2].notes) pluck(CUE.finalHit, n + 12, 0.2, 5000, 0);
 bassNote(CUE.finalHit, 36, 1.2);
 
+// A falling whistle, for something dropping.
+function fall(s0: number, s1: number, gain = 1) {
+  const dur = s1 - s0;
+  place(s0, dur, (_, t) => {
+    const p = t / dur;
+    return Math.sin(2 * Math.PI * (1800 - 1300 * p) * t) * Math.min(1, t / 0.05) * (0.4 + 0.6 * p);
+  }, 0.12 * gain, 0, 0.4);
+}
+// A two-tone alarm.
+function alarm(s: number) {
+  place(s, 0.4, (_, t) => Math.sign(Math.sin(2 * Math.PI * (t < 0.2 ? 880 : 660) * t)) * env(t, 0.005, 0.3) * 0.5, 0.12, 0, 0.3);
+}
+
 // ---------- cue sounds ----------
-const ripple = (fx: number, x: number) => CUE.fixes[fx].lift + ((x + 9.5) / 19) * 0.45;
-// 1 · the tug
+// The problem: sessions pile on, then the change hits seven places.
 whoosh(-PREROLL, PREROLL + 0.05, 0.9);
-clank(CUE.tug - 0.05, 1.2);
-place(CUE.tug, 3, (_, t) => Math.sin(2 * Math.PI * (55 + 20 * Math.min(1, t / 2.5)) * t) * Math.min(1, t / 0.3) * Math.exp(-Math.max(0, t - 2.6) / 0.1), 0.25);
-CUE.yanks.forEach((s, i) => {
-  twang(s, 1 + i * 0.1, ((i % 3) - 1) * 0.5);
+CUE.sessions.forEach((s, i) => {
   thud(s);
-  tick(s, 0.8 + i * 0.08, 0.7);
+  scratch(s + 0.05);
+  tick(s, 0.7 + i * 0.1, 0.6);
 });
-impact(CUE.slack + 0.22, 0.5);
+ping(CUE.request, 0.9);
+pop(CUE.request + 0.12, 1.2, 1);
+CUE.hits.forEach((s, i) => {
+  zap(s, 0.6);
+  tick(s, 0.9 + i * 0.08, 0.7, ((i % 3) - 1) * 0.5);
+  thud(s);
+});
 riser(CUE.riser1[0], CUE.riser1[1], 1.1);
-// 2 · title
+// Title
 impact(CUE.drop, 1.2);
 subDrop(CUE.drop);
 CUE.tagWords.forEach((s) => pop(s, 1, 1));
@@ -338,61 +330,84 @@ CUE.typing.forEach((s) => key(s));
 key(CUE.enter, true);
 pop(CUE.enter, 0.8);
 whoosh(CUE.clear, 0.4, 0.8);
-// 3 · layer 1 scan; each named pattern gets its own hit
-scanHum(CUE.scan[0] - 0.2, CUE.scan[1] + 0.3);
-PROBLEMS.filter((p) => p.layer === 1).forEach((p, i) => {
-  pop(p.tagAt, 1.4 + (i % 6) * 0.08, 0.6, ((i % 5) - 2) / 3);
-  tick(p.tagAt, 1.2 + (i % 4) * 0.1, 0.45);
+// Whips between scenes.
+[SECTIONS.scatter[0], SECTIONS.guards[0], SECTIONS.states[0], SECTIONS.giant[0], SECTIONS.tests[0], SECTIONS.weeks[0]].forEach((t) => whoosh(t - 0.38, 0.44, 0.9));
+// 1 · one feature, five folders
+CUE.scatter.found.forEach((s, i) => {
+  ding(s, 84 + [0, 3, 5, 7, 10][i], 0.8);
+  pop(s, 1.2 + i * 0.1, 0.8);
 });
-CALLOUTS.forEach((p, i) => {
-  ding(p.tagAt, 84 + [0, 3, 5, 7, 10, 12, 3, 7][i % 8], 0.7);
-  whoosh(p.tagAt - 0.05, 0.2, 0.5);
+CUE.scatter.more.forEach((s0, j) => [0, 1, 2, 3].forEach((i) => pop(s0 + i * 0.125, 1.5 + j * 0.2 + i * 0.05, 0.6, (i - 1.5) / 2)));
+whoosh(CUE.scatter.lift, CUE.scatter.land - CUE.scatter.lift, 1);
+impact(CUE.scatter.land, 1);
+subDrop(CUE.scatter.land, 0.8);
+[0, 1, 2].forEach((c) => checkBlip(CUE.scatter.link + c * 0.08, 0.8));
+// 2 · guards: each ring clamps on, then each peels off
+CUE.guards.wrap.forEach((s, i) => {
+  clank(s, 0.8 + i * 0.08);
+  thud(s);
 });
-whoosh(CUE.reveal - 0.3, 0.6, 0.8);
-// 4 · layer 1 cleared: tape tears, wrappers sink, needless links snap
-PROBLEMS.forEach((p) => {
-  if (p.layer !== 1) return;
-  const t = ripple(p.fix, p.anchor[0]);
-  if (p.kind === "tape") scratch(t);
-  if (p.kind === "junction") { thud(t); rumble(t, 0.5, 0.6); }
-  if (p.kind === "needless") zap(t, 0.7);
-  crackle(t + 0.1, 0.3, 0.5);
+CUE.guards.peel.forEach((s, i) => {
+  scratch(s);
+  pop(s, 1 + i * 0.12, 0.7);
 });
-CUE.fixes.slice(0, 3).forEach((f) => impact(f.lift, 0.45));
-// 5 · layer 2: the floor drops away, the red scan sweeps back
-impact(CUE.xray, 0.6);
-subDrop(CUE.xray, 0.8);
-place(CUE.scan2[0] - 0.2, CUE.scan2[1] - CUE.scan2[0] + 0.5, (_, t) => Math.sin(2 * Math.PI * (90 - 30 * t) * t) * Math.min(1, t / 0.1) * 0.5, 0.35, 0, 0.3);
-PROBLEMS.filter((p) => p.layer === 2).forEach((p, i) => {
-  thud(p.tagAt);
-  tick(p.tagAt, 0.7 + i * 0.05, 0.6);
+checkBlip(CUE.guards.peel[5] + 0.2, 1);
+sparkle(CUE.guards.peel[5] + 0.2, 100, 1);
+// 3 · hidden state machines: flips from everywhere, the jam, the machine
+CUE.states.flips.forEach((s, i) => {
+  key(s, true);
+  tick(s, 1 + (i % 3) * 0.15, 0.8, ((i % 3) - 1) * 0.6);
 });
-// 6 · the gathers
-[3, 4].forEach((fx, i) => {
-  const f = CUE.fixes[fx];
-  whoosh(f.lift, f.land - f.lift, 1);
-  impact(f.land, 1.1 - i * 0.2);
-  subDrop(f.land, 0.9);
-  crackle(f.lift + 0.3, 0.6, 1);
-  thud(f.stamp);
-  checkBlip(f.stamp + 0.04, 1.2);
+impact(CUE.states.jam, 0.9);
+[0, 0.5, 1.0].forEach((d) => alarm(CUE.states.jam + d));
+whoosh(CUE.states.collapse - 0.2, 0.5, 1);
+impact(CUE.states.collapse, 0.8);
+pop(CUE.states.collapse + 0.25, 1, 1);
+for (let i = 0; i < 8; i++) pop(CUE.states.edges[0] + (i / 7) * (CUE.states.edges[1] - CUE.states.edges[0]), 1.3 + i * 0.05, 0.5, (i % 2 ? 0.4 : -0.4));
+ping(CUE.states.run[0], 0.7);
+checkBlip(CUE.states.run[1], 1.2);
+// 4 · files too big to read: the file outgrows the frame, then splits
+place(CUE.giant.grow[0], CUE.giant.grow[1] - CUE.giant.grow[0], (_, t) => {
+  const p = t / (CUE.giant.grow[1] - CUE.giant.grow[0]);
+  return saw(hz(40 + 20 * p) * t) * Math.min(1, t / 0.1) * (0.3 + 0.7 * p);
+}, 0.12, 0, 0.2);
+whoosh(CUE.giant.grow[1], 0.5, 0.8, false);
+CUE.giant.seams.forEach((s) => {
+  zap(s, 0.9);
+  scratch(s + 0.02);
 });
-// 7 · the tug again
-clank(CUE.tug2 - 0.05, 1);
-place(CUE.tug2, 1.5, (_, t) => (Math.sin(2 * Math.PI * hz(57 + 12 * Math.min(1, t / 1.2)) * t) * 0.6) * Math.min(1, t / 0.2) * Math.exp(-Math.max(0, t - 1.1) / 0.2), 0.2, 0, 0.5);
-riser(34.0, 36.0, 1);
-// 8 · every week: slop creeps in, the sweep clears it
-impact(CUE.weeks[0], 0.9);
+whoosh(CUE.giant.split, 0.45, 1);
+impact(CUE.giant.split + 0.4, 0.6);
+CUE.giant.checks.forEach((s, i) => checkBlip(s, 0.6 + i * 0.1));
+// 5 · tests that prove nothing: a bug falls through, then gets caught
+pop(CUE.tests.bug[0], 0.7, 1);
+fall(CUE.tests.bug[0] + 0.25, CUE.tests.bug[1]);
+for (let r = 0; r < 6; r++) ding(CUE.tests.bug[0] + 0.25 + (CUE.tests.bug[1] - CUE.tests.bug[0] - 0.25) * Math.cbrt((r + 0.5) / 7), 91 + r, 0.4);
+CUE.tests.merge.forEach((s, i) => {
+  thud(s);
+  pop(s + 0.3, 1.1 + i * 0.1, 0.8);
+});
+pop(CUE.tests.bug2, 0.7, 1);
+fall(CUE.tests.bug2 + 0.05, CUE.tests.caught, 0.8);
+impact(CUE.tests.caught, 1);
+crackle(CUE.tests.caught, 0.6, 1);
+checkBlip(CUE.tests.fixed, 1.2);
+// Payoff: the same change, one place
+impact(CUE.matchCut, 0.5);
+ping(CUE.request2, 0.9);
+pop(CUE.request2 + 0.12, 1.2, 1);
+ding(CUE.hit2, 96, 1);
+checkBlip(CUE.hit2 + 0.05, 1.2);
+riser(38.0, 40.0, 1);
+// Every week: slop creeps in, the run takes it out
+impact(CUE.weeks[0], 0.8);
 CUE.weeks.forEach((w, i) => {
-  place(w + WEEK.creep[0], WEEK.creep[1] - WEEK.creep[0], (_, t) => saw(hz(45 + t * 6) * t) * Math.min(1, t / 0.1) * 0.4, 0.2, 0.3, 0.2);
-  whoosh(w + WEEK.sweep[0] - 0.1, WEEK.sweep[1] - WEEK.sweep[0] + 0.1, 0.8);
-  ding(w + WEEK.sweep[1], 91 + (i % 2) * 4, 0.6);
+  place(w + 0.05, RUN_AT - 0.1, (_, t) => saw(hz(45 + t * 8) * t) * Math.min(1, t / 0.1) * 0.4, 0.2, 0.3, 0.2);
+  zap(w + RUN_AT, 0.7);
+  checkBlip(w + RUN_AT + 0.05, 0.9);
+  ding(w + RUN_AT + 0.05, 91 + (i % 2) * 4, 0.5);
 });
-WEEKLY.forEach((w) => {
-  zap(w.cutAt, 0.6);
-  scratch(w.tapeCutAt);
-});
-// 9 · claim and lockup
+// Claim and lockup
 riser(CUE.slam - 1, CUE.slam, 1);
 impact(CUE.slam, 1.4);
 subDrop(CUE.slam, 1.1);

@@ -1,26 +1,31 @@
 # refactor-codebase launch video
 
-A 52s showreel for the [refactor-codebase](../skills/review/refactor-codebase/SKILL.md)
-skill, made with the launch-video skill. The pitch: it is tuned to find the
-patterns AI-written code piles up, layer after layer of debt, so run it
-regularly to de-slop the codebase. The world is a board of modules wired by
-cables. Colour is the reason a module changes, and the slop scatters each
-colour across the board.
+A 52s 2D showreel for the [refactor-codebase](../skills/review/refactor-codebase/SKILL.md)
+skill, made with the launch-video skill. The pitch: AI-written codebases pile
+up debt in layers, and refactor-codebase, with the specialist skills it runs,
+is tuned to find it. Run it regularly to de-slop the codebase.
 
-1. **The tug.** A hook lifts one module, and five others of the same colour
-   tear loose with it: one change, six places.
+The world is one flat map of the codebase that a 2D camera flies across.
+Files are cards, folders are columns, and colour is the feature a file
+belongs to. Each shot shows a problem happening, then the fix landing, under
+a header naming the skill that hunts it:
+
+1. **The problem.** Sessions stack layers onto the files, then one small
+   change has to touch seven places.
 2. **Title.** "De-slop your codebase." `/refactor-codebase`.
-3. **Layer 1: AI slop.** A scan beam crosses the board, tags every problem,
-   and names the patterns as it hits them: swallowed error, retry + sleep, if
-   for one value, reaching into internals, param for one caller, pass-through
-   wrapper. Then the slop goes, one kind per bar: the tape tears off, the
-   wrappers sink, and the needless links snap.
-4. **Layer 2: the debt under it.** The floor turns red. A deeper scan sweeps
-   back and finds the hidden coupling underneath (copy-pasted logic, one
-   feature in five folders). Each feature then gathers into one place.
-5. **The tug again,** matched to the opening: one change, one place.
-6. **Every week.** New slop creeps in between the clean districts, and each
-   week's sweep clears it. Run it regularly. Keep the slop out.
+3. **One feature, five folders** (refactor-codebase's own hunt for hidden
+   links). The files regroup by feature.
+4. **Guards nothing needs** (find-overengineering). Rings of defensive code
+   peel off one line of real work.
+5. **Hidden state machines** (find-state-machines). Four flags in four files
+   jam the upload in an impossible state, then become one machine where
+   every state has a way out.
+6. **Files too big to read** (ratchet-files). A file outgrows one read and
+   splits on the concepts it already holds.
+7. **Tests that prove nothing** (audit-tests). A bug falls through a green
+   wall; after the audit one test catches it.
+8. **Same change, one place.** Then a weekly chart: slop creeps back, each
+   run takes it out. "Run it regularly. Keep the slop out."
 
 ```bash
 npm install
@@ -31,36 +36,30 @@ npm run render   # 1080p60 H.264, 320k AAC → out/refactor-codebase-launch.mp4
 npm run still -- KeyArt out/key-art.png   # "De-slop your codebase." still
 ```
 
-The board is three.js (via `@remotion/three`), so rendering needs a
-GPU-backed browser (`--gl=angle`, already in the scripts). Renders and
-generated audio are ignored; rerun `npm run audio` after a fresh clone.
+Renders and generated audio are ignored; rerun `npm run audio` after a fresh
+clone.
 
 ## One timing source
 
-`src/cues.ts` holds every event time, in song seconds at 120 BPM.
-`src/world/board.ts` derives the per-item times from it:
-- each tag's time comes from when a scan front crosses it;
-- each block's move comes from its fix;
-- each week's slop comes from that week's sweep.
-
-The board, the type and `audio/synth.ts` all read those two files, so moving a
-cue moves its picture and its sound together. Everything is a pure function of
-song time.
+`src/cues.ts` holds every event time, in song seconds at 120 BPM. The scenes,
+the camera (`src/camera.ts`), the type and `audio/synth.ts` all read it, so
+moving a cue moves its picture and its sound together. Everything is a pure
+function of song time.
 
 The first 0.3s is a pre-roll that holds the title card as the feed thumbnail.
 `PREROLL` shifts both the picture and the music.
 
 ## Claims and sources
 
-- Every pattern named on screen comes from the skill's own list of hidden
-  links, needless links, surplus, and special cases.
-- "Layer 2" is the skill's step 4: search again, and go back to step 1 with
-  what the search finds.
+- Each shot's problem comes from the skill that hunts it: refactor-codebase's
+  hidden links (one feature spread across folders by layer), and the
+  find-overengineering, find-state-machines, ratchet-files and audit-tests
+  skills it runs. The 8k-token read is ratchet-files' default budget.
 - "Run it regularly" is how we recommend using the skill. The skill itself
   doesn't claim it; it is a recommendation.
-- The counts (6 places, 22 + 9 problems, 4 weeks) are illustrative, not
-  measured.
+- The counts (40 sessions, 7 places, 28 lines, 31k tokens, the weekly chart)
+  are illustrative, not measured.
 
 The audio is verified by measurement (ffmpeg `ebur128`: −12.7 LUFS integrated
-on the master, −0.9 dBFS peak; a spectrogram shows the risers and impacts at
-their cue times), not by ear.
+on the master, −1.2 dBTP true peak; a spectrogram shows the risers and
+impacts at their cue times), not by ear.
