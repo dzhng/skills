@@ -29,7 +29,13 @@ code gets the answer wrong in three ways:
    codebase and write down each place it gets the question wrong. List every
    **special case** too: an `if` for one value, a parameter for one caller, a
    swallowed exception, a retry or sleep, a disabled test. Each one is a
-   requirement the design never accounted for. To reason across all of it at
+   requirement the design never accounted for. Have subagents run the
+   specialist hunts and add what they report, changing nothing yet:
+   [find-state-machines](../find-state-machines/SKILL.md) for one lifecycle
+   spread across flags, effects and callbacks,
+   [find-overengineering](../find-overengineering/SKILL.md) for guards and
+   fallbacks nothing needs, and [ratchet-files](../ratchet-files/SKILL.md)
+   for files too big to read whole. To reason across all of it at
    once, script a skeleton with the function bodies stripped and a graph of
    what imports what, and use git history as evidence of what really changes
    together. Keep the list in a file so it survives compaction.
@@ -58,12 +64,16 @@ code gets the answer wrong in three ways:
    diff with [code-review](../code-review/SKILL.md) and fix what it finds.
    Commit each fix on its own with the project's checks passing, and name any
    behavior it changes in the commit message, so a behavior change traces to
-   one fix. Tests are the safety net here: leave pruning them to
-   [audit-tests](../audit-tests/SKILL.md), afterwards.
+   one fix. Tests are the safety net here, so leave them alone until step 5.
 4. **Search again.** Have fresh subagents hunt for hidden links, needless
-   links, surplus and special cases, and return to step 1 with what they find.
+   links, surplus and special cases, rerun the specialist hunts, and return to
+   step 1 with what they find.
+5. **Audit the tests.** Once the search comes back empty, run
+   [audit-tests](../audit-tests/SKILL.md) over the suites the refactor
+   touched, and land what it finds the same way.
 
 Done when subagents find nothing worth fixing, a typical change lands in one
-place, nothing imports anything more volatile than itself, and behavior is the
-same as when you started, apart from bugs the refactor fixed. The number of
+place, nothing imports anything more volatile than itself, every test earns
+its keep, and behavior is the same as when you started, apart from bugs the
+refactor fixed. The number of
 special cases left is the best measure of how close you are.
