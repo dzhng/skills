@@ -2,9 +2,9 @@
 // one sound per on-screen event. Writes public/raw.wav; master.ts loudnorms it.
 import { writeFileSync } from "node:fs";
 import {
-  BAR, BEAT, COMMITS, CUE, DURATION, PREROLL, SECTIONS, SONG_END,
+  BAR, BEAT, CUE, DURATION, PREROLL, SECTIONS, SONG_END, WEEK,
 } from "../src/cues.ts";
-import { PROBLEMS } from "../src/world/board.ts";
+import { CALLOUTS, FIX, PROBLEMS, WEEKLY } from "../src/world/board.ts";
 
 const SR = 48000;
 const N = Math.ceil(DURATION * SR);
@@ -63,7 +63,7 @@ const CHORDS = [
   { root: 43, notes: [55, 59, 62, 67] },
 ];
 const chordAt = (s: number) => CHORDS[Math.floor(Math.max(0, s) / BAR) % 4];
-const kickOn = (s: number) => inRange(s, SECTIONS.dropA) || inRange(s, SECTIONS.scan) || inRange(s, SECTIONS.land) || inRange(s, SECTIONS.dropC);
+const kickOn = (s: number) => [SECTIONS.dropA, SECTIONS.scan, SECTIONS.clean, SECTIONS.gather, SECTIONS.weeks, SECTIONS.claim].some((r) => inRange(s, r));
 const kicks: number[] = [];
 for (let s = 0; s < SONG_END; s += BEAT) if (kickOn(s)) kicks.push(s);
 
@@ -265,49 +265,50 @@ function crackle(s: number, dur = 0.6, gain = 1) {
 
 // ---------- the bed ----------
 const drumsOn = (s: number) => kickOn(s);
-const HEAVY = [CUE.drop, CUE.slam, ...CUE.fixes.map((f) => f.land)];
+const HEAVY = [CUE.drop, CUE.slam, CUE.fixes[3].land, CUE.fixes[4].land];
 for (const k of kicks) kick(k, HEAVY.some((t) => Math.abs(t - k) < 0.01) ? 1.2 : 1);
 for (let s = 0; s < SONG_END; s += BEAT) {
   const beat = Math.round(s / BEAT) % 4;
   if (drumsOn(s) && (beat === 1 || beat === 3)) clap(s, inRange(s, SECTIONS.scan) ? 0.8 : 1);
-  // Heartbeat sub under the tug and the search.
-  if ((inRange(s, SECTIONS.intro) && s > 0.4 && s < CUE.slack) || inRange(s, SECTIONS.search)) place(s, 0.3, (_, t) => Math.sin(2 * Math.PI * 50 * t) * env(t, 0.004, 0.09), inRange(s, SECTIONS.search) ? 0.4 : 0.5);
+  // Heartbeat sub under the tug, the deep scan, and the payoff.
+  if ((inRange(s, SECTIONS.intro) && s > 0.4 && s < CUE.slack) || inRange(s, SECTIONS.deep) || inRange(s, SECTIONS.payoff)) place(s, 0.3, (_, t) => Math.sin(2 * Math.PI * 50 * t) * env(t, 0.004, 0.09), 0.45);
 }
 for (let s = 0; s < SONG_END; s += BEAT / 4) {
   const sixteenth = Math.round(s / (BEAT / 4)) % 4;
   if (drumsOn(s)) {
     if (sixteenth === 2) hat(s, true, 0.9, 0.2);
     else hat(s, false, sixteenth === 0 ? 0.5 : 0.8, -0.25);
-  } else if (inRange(s, SECTIONS.redesign) && s < CUE.riser2[0] && sixteenth % 2 === 0) hat(s, sixteenth === 2, 0.45, 0.2);
+  } else if (inRange(s, SECTIONS.payoff) && sixteenth === 2) hat(s, false, 0.4, 0.2);
 }
-// Snare roll into the landing: quarters → eighths → sixteenths.
-for (let s = CUE.riser2[0]; s < CUE.riser2[1]; ) {
-  const p = (s - CUE.riser2[0]) / (CUE.riser2[1] - CUE.riser2[0]);
-  clap(s, 0.35 + 0.65 * p);
-  s += p < 0.5 ? BEAT : p < 0.75 ? BEAT / 2 : BEAT / 4;
+// Snare roll into the gathers and into the weeks.
+for (const [r0, r1] of [[24.0, 26.0], [34.0, 36.0]]) {
+  for (let s = r0; s < r1; ) {
+    const p = (s - r0) / (r1 - r0);
+    clap(s, 0.3 + 0.6 * p);
+    s += p < 0.5 ? BEAT : p < 0.75 ? BEAT / 2 : BEAT / 4;
+  }
 }
-// Bass: pumping eighths wherever the kick plays; long roots in the redesign.
+// Bass: pumping eighths wherever the kick plays.
 for (let s = 0; s < SONG_END; s += BEAT / 2) {
   const { root } = chordAt(s);
   if (drumsOn(s)) {
     const off = Math.round(s / (BEAT / 2)) % 2 === 1;
     bassNote(s, root + (off ? 12 : 0), BEAT / 2);
-  } else if (inRange(s, SECTIONS.redesign) && Math.abs((s / BAR) % 1) < 0.01) bassNote(s, root, BAR * 0.9);
+  } else if ((inRange(s, SECTIONS.deep) || inRange(s, SECTIONS.payoff)) && Math.abs((s / BAR) % 1) < 0.01) bassNote(s, root, BAR * 0.9);
 }
-// Pad: shut in the tangle, open in the drops, wide in the blueprint, dark in the search.
+// Pad: shut in the slop, open in the drops, dark under the floor, wide at the end.
 pad(0, SONG_END, (s) => {
   if (s < 6) return 250 + 900 * (s / 6) ** 2;
-  if (inRange(s, SECTIONS.redesign)) return 2200 + (s > 24 ? 3000 * ((s - 24) / 2) ** 2 : 0);
-  if (inRange(s, SECTIONS.search)) return 600;
-  if (inRange(s, SECTIONS.payoff)) return 900 + 2500 * ((s - 44) / 2) ** 2;
+  if (inRange(s, SECTIONS.deep)) return 700 + 3000 * ((s - 24) / 2) ** 2;
+  if (inRange(s, SECTIONS.payoff)) return 1200 + (s > 34 ? 3000 * ((s - 34) / 2) ** 2 : 0);
   if (s >= SECTIONS.outro[0]) return 3200;
   return 2700;
 }, 1);
-// Arp: sixteenths over chord tones in the drops, softer in the redesign.
+// Arp: sixteenths over chord tones in the drops, softer under the scan.
 for (let s = 0; s < SECTIONS.outro[0]; s += BEAT / 4) {
-  const inDrop = drumsOn(s) && !inRange(s, SECTIONS.scan);
-  const soft = inRange(s, SECTIONS.redesign) || inRange(s, SECTIONS.scan);
-  if (!inDrop && !soft) continue;
+  const on = drumsOn(s) || inRange(s, SECTIONS.payoff);
+  if (!on) continue;
+  const soft = inRange(s, SECTIONS.scan) || inRange(s, SECTIONS.payoff);
   const { notes } = chordAt(s);
   const i = Math.round(s / (BEAT / 4));
   const n = notes[[0, 1, 2, 3, 2, 1, 3, 2][i % 8]] + 12;
@@ -317,6 +318,7 @@ for (const n of CHORDS[2].notes) pluck(CUE.finalHit, n + 12, 0.2, 5000, 0);
 bassNote(CUE.finalHit, 36, 1.2);
 
 // ---------- cue sounds ----------
+const ripple = (fx: number, x: number) => CUE.fixes[fx].lift + ((x + 9.5) / 19) * 0.45;
 // 1 · the tug
 whoosh(-PREROLL, PREROLL + 0.05, 0.9);
 clank(CUE.tug - 0.05, 1.2);
@@ -336,58 +338,69 @@ CUE.typing.forEach((s) => key(s));
 key(CUE.enter, true);
 pop(CUE.enter, 0.8);
 whoosh(CUE.clear, 0.4, 0.8);
-// 3 · scan
+// 3 · layer 1 scan; each named pattern gets its own hit
 scanHum(CUE.scan[0] - 0.2, CUE.scan[1] + 0.3);
-PROBLEMS.forEach((p, i) => {
-  pop(p.tagAt, 1.4 + (i % 6) * 0.08, 0.7, ((i % 5) - 2) / 3);
-  tick(p.tagAt, 1.2 + (i % 4) * 0.1, 0.5);
+PROBLEMS.filter((p) => p.layer === 1).forEach((p, i) => {
+  pop(p.tagAt, 1.4 + (i % 6) * 0.08, 0.6, ((i % 5) - 2) / 3);
+  tick(p.tagAt, 1.2 + (i % 4) * 0.1, 0.45);
+});
+CALLOUTS.forEach((p, i) => {
+  ding(p.tagAt, 84 + [0, 3, 5, 7, 10, 12, 3, 7][i % 8], 0.7);
+  whoosh(p.tagAt - 0.05, 0.2, 0.5);
 });
 whoosh(CUE.reveal - 0.3, 0.6, 0.8);
-// 4 · redesign
-whoosh(CUE.blueprint - 0.3, 0.4, 1, false);
-impact(CUE.blueprint, 0.35);
-PROBLEMS.forEach((p, i) => sparkle(CUE.flock[0] + p.fix * 0.12 + p.slot * 0.05 + 0.85, 96 + (i % 5) * 2, 0.8));
-CUE.snaps.forEach((s, i) => {
-  ding(s, 84 + [0, 3, 5, 7][i], 0.9);
-  pop(s, 1 + i * 0.1, 1);
+// 4 · layer 1 cleared: tape tears, wrappers sink, needless links snap
+PROBLEMS.forEach((p) => {
+  if (p.layer !== 1) return;
+  const t = ripple(p.fix, p.anchor[0]);
+  if (p.kind === "tape") scratch(t);
+  if (p.kind === "junction") { thud(t); rumble(t, 0.5, 0.6); }
+  if (p.kind === "needless") zap(t, 0.7);
+  crackle(t + 0.1, 0.3, 0.5);
 });
-pop(CUE.tally, 0.9, 1.2);
-riser(CUE.riser2[0], CUE.riser2[1], 1.2);
-// 5 · land each fix
-CUE.fixes.forEach((f, i) => {
-  zap(f.lift - 0.2, 0.9); // snip
-  scratch(f.lift - 0.1); // tape torn off
+CUE.fixes.slice(0, 3).forEach((f) => impact(f.lift, 0.45));
+// 5 · layer 2: the floor drops away, the red scan sweeps back
+impact(CUE.xray, 0.6);
+subDrop(CUE.xray, 0.8);
+place(CUE.scan2[0] - 0.2, CUE.scan2[1] - CUE.scan2[0] + 0.5, (_, t) => Math.sin(2 * Math.PI * (90 - 30 * t) * t) * Math.min(1, t / 0.1) * 0.5, 0.35, 0, 0.3);
+PROBLEMS.filter((p) => p.layer === 2).forEach((p, i) => {
+  thud(p.tagAt);
+  tick(p.tagAt, 0.7 + i * 0.05, 0.6);
+});
+// 6 · the gathers
+[3, 4].forEach((fx, i) => {
+  const f = CUE.fixes[fx];
   whoosh(f.lift, f.land - f.lift, 1);
-  impact(f.land, i === 0 ? 1.2 : 0.7);
-  if (i === 0) subDrop(f.land);
-  crackle(f.land, 0.7, 1);
+  impact(f.land, 1.1 - i * 0.2);
+  subDrop(f.land, 0.9);
+  crackle(f.lift + 0.3, 0.6, 1);
   thud(f.stamp);
   checkBlip(f.stamp + 0.04, 1.2);
 });
-COMMITS.forEach((s, i) => {
-  tick(s, 1.6, 1);
-  pop(s, 1.3 + i * 0.06, 0.8);
-});
-// 6 · search
-[0, 1, 2].forEach((i) => ping(CUE.sweep[0] + i * 0.15, 0.8));
-for (let s = CUE.sweep[0] + 1; s < CUE.allClear; s += 1) ping(s, 0.45);
-thud(CUE.found);
-place(CUE.found, 0.3, (_, t) => Math.sign(Math.sin(2 * Math.PI * 880 * t)) * env(t, 0.002, 0.08) * (t < 0.12 || t > 0.16 ? 1 : 0), 0.08, 0.2, 0.5);
-zap(CUE.refix, 1);
-checkBlip(CUE.refix + 0.3, 1.2);
-ding(CUE.allClear, 91, 1);
-ding(CUE.allClear + 0.06, 95, 0.8);
 // 7 · the tug again
 clank(CUE.tug2 - 0.05, 1);
 place(CUE.tug2, 1.5, (_, t) => (Math.sin(2 * Math.PI * hz(57 + 12 * Math.min(1, t / 1.2)) * t) * 0.6) * Math.min(1, t / 0.2) * Math.exp(-Math.max(0, t - 1.1) / 0.2), 0.2, 0, 0.5);
+riser(34.0, 36.0, 1);
+// 8 · every week: slop creeps in, the sweep clears it
+impact(CUE.weeks[0], 0.9);
+CUE.weeks.forEach((w, i) => {
+  place(w + WEEK.creep[0], WEEK.creep[1] - WEEK.creep[0], (_, t) => saw(hz(45 + t * 6) * t) * Math.min(1, t / 0.1) * 0.4, 0.2, 0.3, 0.2);
+  whoosh(w + WEEK.sweep[0] - 0.1, WEEK.sweep[1] - WEEK.sweep[0] + 0.1, 0.8);
+  ding(w + WEEK.sweep[1], 91 + (i % 2) * 4, 0.6);
+});
+WEEKLY.forEach((w) => {
+  zap(w.cutAt, 0.6);
+  scratch(w.tapeCutAt);
+});
+// 9 · claim and lockup
 riser(CUE.slam - 1, CUE.slam, 1);
 impact(CUE.slam, 1.4);
 subDrop(CUE.slam, 1.1);
 impact(CUE.slam2, 0.7);
-// 8 · lockup
 whoosh(CUE.lockup - 0.4, 0.4, 0.8, false);
 impact(CUE.lockup, 0.9);
 subDrop(CUE.lockup, 0.7);
+pop(CUE.lockTag, 1);
 key(CUE.lockCmd, true);
 pop(CUE.lockCmd, 1.1);
 pop(CUE.lockInstall, 1.3);

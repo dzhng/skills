@@ -1,7 +1,7 @@
 // 2D type over the board, all driven by song time.
 import React from "react";
-import { COMMAND, COMMITS, CUE, INSTALL_CMD, SECTIONS, STEPS } from "../cues.ts";
-import { PROBLEMS } from "../world/board.ts";
+import { COMMAND, CUE, INSTALL_CMD, STEPS, WEEK } from "../cues.ts";
+import { CALLOUTS, LAYER_COUNT, PROBLEMS } from "../world/board.ts";
 import { C, MONO, SANS } from "../theme.ts";
 import { clamp, inCubic, inOutCubic, lerp, outCubic, prog, spring, squash } from "../anim.ts";
 
@@ -33,10 +33,10 @@ const lastAt = (times: number[], s: number) => times.filter((t) => s >= t).at(-1
 // "1 change → N places", counting the places the change drags along.
 export const TugCount: React.FC<S> = ({ s }) => {
   const first = s >= CUE.tug + 0.2 && s < CUE.slack + 0.7;
-  const second = s >= CUE.tug2 + 0.2 && s < CUE.slam - 0.05;
+  const second = s >= CUE.tug2 + 0.2 && s < CUE.weeks[0] - 0.05;
   if (!first && !second) return null;
   const at = first ? CUE.tug + 0.2 : CUE.tug2 + 0.2;
-  const end = first ? CUE.slack + 0.7 : CUE.slam - 0.05;
+  const end = first ? CUE.slack + 0.7 : CUE.weeks[0] - 0.05;
   const times = first ? [at, ...CUE.yanks] : [at];
   const n = times.filter((t) => s >= t).length;
   const enter = spring(s, at, 2.4, 0.5);
@@ -69,7 +69,7 @@ export const Title: React.FC<S & { poster?: boolean }> = ({ s, poster }) => {
         refactor<span style={{ color: C.periwinkle }}>-</span>codebase
       </div>
       <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 58, letterSpacing: -1.5, color: C.fg, textShadow: HALO, whiteSpace: "nowrap" }}>
-        {poster ? <>Untangle a whole codebase in one run.</> : <Word s={s} at={CUE.tagWords[0]}>Untangle a whole codebase in one run.</Word>}
+        {poster ? <>De-slop your codebase.</> : <Word s={s} at={CUE.tagWords[0]}>De-slop your codebase.</Word>}
       </div>
       <div style={{ marginTop: 26, opacity: clamp(pill * 2), transform: `translateY(${(1 - pill) * 30}px) scale(${1 + enter * 0.06})`, fontFamily: MONO, fontWeight: 500, fontSize: 46, color: C.fg, padding: "22px 40px", borderRadius: 20, background: `rgba(14,20,44,${0.78 + enter * 0.2})`, border: `2px solid ${done ? C.blue : "rgba(143,176,255,0.35)"}`, boxShadow: `0 0 ${30 + enter * 80}px rgba(43,82,245,${0.35 + enter * 0.5}), 0 20px 60px rgba(0,0,0,0.5)`, minWidth: 620 }}>
         <span style={{ color: C.periwinkle }}>❯ </span>
@@ -80,66 +80,71 @@ export const Title: React.FC<S & { poster?: boolean }> = ({ s, poster }) => {
   );
 };
 
-// ---------- steps 01–04 ----------
-const problemsFound = (s: number) => PROBLEMS.filter((p) => s >= p.tagAt).length;
-const FIX_SIZES = [0, 1, 2, 3].map((fx) => PROBLEMS.filter((p) => p.fix === fx).length);
-const problemsLeft = (s: number) => PROBLEMS.length - CUE.fixes.reduce((a, f, i) => a + (s >= f.land ? FIX_SIZES[i] : 0), 0);
+// ---------- the findings feed ----------
+// Each slop pattern the scan hits slams in top-left; older ones step down and fade.
+export const Findings: React.FC<S> = ({ s }) => {
+  const live = CALLOUTS.filter((p) => s >= p.tagAt && s < p.tagAt + 2.4 && s < (p.layer === 1 ? CUE.reveal + 0.6 : CUE.fixes[3].lift)).reverse();
+  if (!live.length) return null;
+  return (
+    <div style={{ position: "absolute", left: 100, top: 96 }}>
+      {live.map((p, i) => {
+        const pop = spring(s, p.tagAt, 2.8, 0.42);
+        const out = inCubic(prog(s, p.tagAt + 2.0, p.tagAt + 2.4));
+        const y = live.slice(0, i).reduce((a, q) => a + 104 * outCubic(prog(s, q.tagAt, q.tagAt + 0.12)), 0);
+        const hit = Math.exp(-(s - p.tagAt) / 0.15);
+        const deep = p.layer === 2;
+        return (
+          <div key={p.id} style={{ position: "absolute", left: 0, top: y, transform: `translate(${(1 - pop) * -120}px, ${(1 - clamp(pop)) * -30}px) scale(${(i === 0 ? 1 : 0.86) * (1 + hit * 0.08)})`, transformOrigin: "left center", opacity: clamp(pop * 2) * (1 - out) * (i === 0 ? 1 : 0.55), display: "flex", alignItems: "center", gap: 20, padding: "14px 34px 14px 26px", borderRadius: 60, background: deep ? "rgba(255,77,94,0.95)" : "rgba(255,255,255,0.96)", boxShadow: `0 10px 40px rgba(0,0,0,0.45), 0 0 ${hit * 60}px rgba(255,77,94,${hit})`, whiteSpace: "nowrap" }}>
+            <div style={{ width: 26, height: 26, borderRadius: 13, background: deep ? "#fff" : C.red, boxShadow: `0 0 ${10 + hit * 20}px ${C.red}` }} />
+            <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 56, letterSpacing: -1.5, color: deep ? "#fff" : "#0b1022" }}>{p.label}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+// ---------- section headers ----------
+const found = (layer: 1 | 2, s: number) => PROBLEMS.filter((p) => p.layer === layer && s >= p.tagAt).length;
+const cleared = (layer: 1 | 2, s: number) => PROBLEMS.filter((p) => p.layer === layer && s >= CUE.fixes[p.fix].land).length;
 
 export const StepHeader: React.FC<S> = ({ s }) => {
   const step = STEPS.find((t) => s >= t.at && s < t.until);
   if (!step) return null;
   const i = STEPS.indexOf(step);
   const enter = spring(s, step.at + 0.05, 2.4, 0.55);
-  const exit = i === STEPS.length - 1 ? inCubic(prog(s, step.until - 0.25, step.until)) : 0;
-  const first = i === 0 ? clamp(enter) : 1;
-  // The live counter: what this step is doing to the problem list.
-  let value: number, changed: number, caption: string, color: string = C.fg;
-  if (i === 0) {
-    value = problemsFound(s);
-    changed = lastAt(PROBLEMS.map((p) => p.tagAt), s);
-    caption = value === 1 ? "problem" : "problems";
-    color = value > 0 ? C.red : C.fg;
-  } else if (i === 1) {
-    const tallied = CUE.snaps.filter((t) => s >= t).length;
-    value = tallied || PROBLEMS.length;
-    changed = tallied ? lastAt([...CUE.snaps], s) : -1;
-    caption = tallied ? (tallied === 1 ? "fix" : "fixes") : "problems";
-    color = tallied ? C.periwinkle : C.red;
-  } else if (i === 2) {
-    value = problemsLeft(s);
-    changed = lastAt(CUE.fixes.map((f) => f.land), s);
-    caption = "problems left";
-    color = value === 0 ? C.green : C.red;
+  const exit = inCubic(prog(s, step.until - 0.25, step.until));
+  // The live counter: slop found, then slop left, then the week.
+  let value: number, changed: number, caption: string, color: string;
+  if (i < 2) {
+    const layer = (i + 1) as 1 | 2;
+    const fixes = layer === 1 ? [0, 1, 2] : [3, 4];
+    const cleaning = s >= CUE.fixes[fixes[0]].lift;
+    if (!cleaning) {
+      value = found(layer, s);
+      changed = lastAt(PROBLEMS.filter((p) => p.layer === layer).map((p) => p.tagAt), s);
+      caption = "found";
+    } else {
+      value = LAYER_COUNT[layer] - cleared(layer, s);
+      changed = lastAt(fixes.map((f) => CUE.fixes[f].land), s);
+      caption = value === 0 ? "clean" : "left";
+    }
+    color = value === 0 && cleaning ? C.green : value > 0 ? C.red : C.fg;
   } else {
-    const found = s >= CUE.found && s < CUE.refix ? 1 : 0;
-    value = found;
-    changed = lastAt([CUE.found, CUE.refix], s);
-    caption = s >= CUE.allClear ? "found · all clear" : "found";
-    color = found ? C.red : C.green;
+    const w = CUE.weeks.filter((t) => s >= t).length;
+    value = w;
+    changed = lastAt([...CUE.weeks], s);
+    const swept = s >= CUE.weeks[w - 1] + WEEK.sweep[1];
+    caption = swept ? "week · clean" : "week";
+    color = swept ? C.green : C.fg;
   }
-  const commits = COMMITS.filter((t) => s >= t).length;
   return (
     <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 330, opacity: 1 - exit, filter: blur(exit * 8) }}>
-      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(4,6,14,0.82) 0%, rgba(4,6,14,0) 100%)", opacity: first }} />
-      <div style={{ position: "absolute", left: 100, bottom: 92, transform: `translateX(${(1 - enter) * -60}px)`, opacity: clamp(enter * 1.5) }}>
-        <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 30, color: C.periwinkle, letterSpacing: 2 }}>{step.n}</div>
-        <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 76, letterSpacing: -2.5, color: C.fg, textShadow: HALO, whiteSpace: "nowrap" }}>{step.label}</div>
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(4,6,14,0.82) 0%, rgba(4,6,14,0) 100%)", opacity: clamp(enter) }} />
+      <div style={{ position: "absolute", left: 100, bottom: 80, transform: `translateX(${(1 - enter) * -60}px)`, opacity: clamp(enter * 1.5) }}>
+        <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 30, color: i === 1 ? "#ff8a96" : C.periwinkle, letterSpacing: 3 }}>{step.n}</div>
+        <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 80, letterSpacing: -2.5, color: C.fg, textShadow: HALO, whiteSpace: "nowrap" }}>{step.label}</div>
       </div>
-      {s >= SECTIONS.land[0] && (
-        <div style={{ position: "absolute", left: 104, bottom: 56, display: "flex", gap: 0, alignItems: "center" }}>
-          {COMMITS.map((t, k) => {
-            const on = s >= t;
-            const pop = on ? spring(s, t, 3, 0.4) : 0;
-            return (
-              <React.Fragment key={k}>
-                {k > 0 && <div style={{ width: 34, height: 3, background: on ? C.periwinkle : "rgba(143,176,255,0.2)" }} />}
-                <div style={{ width: 18, height: 18, borderRadius: 9, border: `3px solid ${on ? C.periwinkle : "rgba(143,176,255,0.3)"}`, background: on ? C.periwinkle : "transparent", transform: `scale(${on ? pop : 0.8})`, boxShadow: on ? `0 0 ${10 + 20 * Math.exp(-(s - t) / 0.2)}px ${C.periwinkle}` : undefined }} />
-              </React.Fragment>
-            );
-          })}
-          <div style={{ marginLeft: 18, fontFamily: MONO, fontSize: 24, color: C.muted }}>{commits} {commits === 1 ? "commit" : "commits"}</div>
-        </div>
-      )}
       <div style={{ position: "absolute", right: 110, bottom: 74, textAlign: "right", opacity: clamp(enter * 1.5), transform: `translateX(${(1 - enter) * 60}px)` }}>
         <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: 168, lineHeight: 0.9, letterSpacing: -6, fontVariantNumeric: "tabular-nums", textShadow: HALO }}>
           <Roll value={value} changedAt={changed} s={s} color={color} />
@@ -163,8 +168,8 @@ export const Claim: React.FC<S> = ({ s }) => {
   };
   return (
     <div style={{ position: "absolute", left: 0, right: 0, top: 70, display: "flex", flexDirection: "column", alignItems: "center", fontFamily: SANS, fontWeight: 900, fontSize: 168, letterSpacing: -9, lineHeight: 1, textShadow: "0 0 70px rgba(4,6,16,0.95), 0 0 30px rgba(4,6,16,0.8)", opacity: 1 - out, transform: `scale(${1 - out * 0.1})`, filter: blur(out * 10) }}>
-      {line(CUE.slam, "One change.", C.fg)}
-      {line(CUE.slam2, "One place.", C.periwinkle)}
+      {line(CUE.slam, "Run it regularly.", C.fg)}
+      {line(CUE.slam2, "Keep the slop out.", C.periwinkle)}
     </div>
   );
 };
@@ -173,6 +178,7 @@ export const Claim: React.FC<S> = ({ s }) => {
 export const Lockup: React.FC<S> = ({ s }) => {
   if (s < CUE.lockup) return null;
   const p = spring(s, CUE.lockup, 2.2, 0.5);
+  const tag = spring(s, CUE.lockTag, 2.6, 0.5);
   const cmd = spring(s, CUE.lockCmd, 2.6, 0.5);
   const inst = spring(s, CUE.lockInstall, 2.6, 0.5);
   const hit = s >= CUE.finalHit ? Math.exp(-(s - CUE.finalHit) / 0.2) : 0;
@@ -181,6 +187,7 @@ export const Lockup: React.FC<S> = ({ s }) => {
       <div style={{ fontFamily: SANS, fontWeight: 900, fontSize: 168, letterSpacing: -8, color: C.fg, transform: `scale(${lerp(0.85, 1, clamp(p)) * (1 + hit * 0.03)})`, opacity: clamp(p * 2), filter: blur((1 - clamp(p)) * 10), textShadow: `0 0 ${60 + hit * 80}px rgba(43,82,245,${0.45 + hit * 0.4})` }}>
         refactor<span style={{ color: C.periwinkle }}>-</span>codebase
       </div>
+      <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 56, letterSpacing: -1.5, color: C.fg, marginTop: -14, opacity: clamp(tag * 2), transform: `translateY(${(1 - tag) * 20}px)` }}>De-slop your codebase.</div>
       <div style={{ fontFamily: MONO, fontWeight: 500, fontSize: 46, color: C.fg, padding: "18px 36px", borderRadius: 18, background: "rgba(14,20,44,0.85)", border: `2px solid ${C.blue}`, boxShadow: "0 0 40px rgba(43,82,245,0.45)", opacity: clamp(cmd * 2), transform: `translateY(${(1 - cmd) * 24}px)` }}>
         <span style={{ color: C.periwinkle }}>❯ </span>{COMMAND}
       </div>

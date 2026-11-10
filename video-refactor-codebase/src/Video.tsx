@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react";
 import { AbsoluteFill, Audio, continueRender, delayRender, staticFile, useCurrentFrame } from "remotion";
 import { CUE, FPS, PREROLL } from "./cues.ts";
 import { C, H, W, fontsReady } from "./theme.ts";
-import { blueprint, clamp, dim, inCubic, prog, shake } from "./anim.ts";
+import { clamp, inCubic, prog, shake, xray } from "./anim.ts";
 import { World } from "./world/World.tsx";
-import { Claim, Lockup, StepHeader, Title, TugCount } from "./overlay/Type.tsx";
+import { Claim, Findings, Lockup, StepHeader, Title, TugCount } from "./overlay/Type.tsx";
 
 // Song time s = video time − PREROLL. The pre-roll holds the finished title
 // card over the tangled board as the feed thumbnail, then blows into the tug.
@@ -27,7 +27,7 @@ export const LaunchVideo: React.FC = () => {
   const poster = s < 0;
   const posterOut = inCubic(prog(s, 0, 0.25));
   const white = s < CUE.drop ? prog(s, CUE.drop - 0.2, CUE.drop - 0.02) : 1 - prog(s, CUE.drop, CUE.drop + 0.25);
-  const flashes = [[CUE.slam, 0.2], [CUE.lockup, 0.25], [CUE.matchCut, 0.15], ...CUE.fixes.map((f) => [f.land, 0.1])].reduce((a, [t, g]) => a + (s >= t ? g * Math.exp(-(s - t) / 0.07) : 0), 0);
+  const flashes = [[CUE.slam, 0.2], [CUE.lockup, 0.25], [CUE.matchCut, 0.15], [CUE.xray, 0.2], ...CUE.fixes.slice(3).map((f) => [f.land, 0.12])].reduce((a, [t, g]) => a + (s >= t ? g * Math.exp(-(s - t) / 0.07) : 0), 0);
   const lockDark = prog(s, CUE.lockup - 0.05, CUE.lockup + 0.4);
   const titleDark = poster ? 0.45 : 0.45 * prog(s, CUE.drop, CUE.drop + 0.3) * (1 - prog(s, CUE.clear, CUE.clear + 0.4));
   return (
@@ -47,6 +47,7 @@ export const LaunchVideo: React.FC = () => {
               <TugCount s={s} />
               <Title s={s} />
               <StepHeader s={s} />
+              <Findings s={s} />
               <Claim s={s} />
               <Lockup s={s} />
             </>
@@ -55,7 +56,7 @@ export const LaunchVideo: React.FC = () => {
       </AbsoluteFill>
       <AbsoluteFill style={{ background: "#f6f8ff", opacity: clamp(white), pointerEvents: "none" }} />
       <AbsoluteFill style={{ background: "#ffffff", opacity: clamp(flashes * 0.7), mixBlendMode: "screen" }} />
-      <AbsoluteFill style={{ background: `radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(2,3,10,${0.25 + dim(s) * 0.35 + blueprint(s) * 0.1}) 100%)` }} />
+      <AbsoluteFill style={{ background: `radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(2,3,10,${0.25 + xray(s) * 0.3}) 100%)` }} />
       <svg style={{ position: "absolute", inset: 0, mixBlendMode: "overlay", opacity: 0.18 }} width={W} height={H}>
         <filter id="grain">
           <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed={frame % 30} stitchTiles="stitch" />

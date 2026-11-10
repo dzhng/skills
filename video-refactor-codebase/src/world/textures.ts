@@ -103,21 +103,6 @@ export const tagTex = (kind: keyof typeof GLYPH) =>
     g.fillText(GLYPH[kind], 64, 102);
   });
 
-// Fix header: a wide white sign, the count of problems it removes.
-export const fixTex = (n: number, done: boolean) =>
-  make(`fix${n}${done}`, 384, 192, (g) => {
-    g.fillStyle = done ? C.green : "#ffffff";
-    const r = 36;
-    g.beginPath();
-    g.roundRect(4, 4, 376, 184, r);
-    g.fill();
-    g.fillStyle = done ? "#fff" : C.print;
-    g.font = `900 120px ${SANS}`;
-    g.textAlign = "center";
-    g.textBaseline = "middle";
-    g.fillText(done ? "✓" : `×${n}`, 192, 102);
-  });
-
 // Duct tape: hazard stripes for the special-case wraps.
 export const tapeTex = () =>
   make("tape", 256, 64, (g) => {

@@ -1,7 +1,7 @@
 // The camera's flight, keyed on song time. Catmull-Rom through keys keeps it
 // always moving; a `cut` key starts a new path.
 import { CUE } from "../cues.ts";
-import { BLOCKS, FEATURES, TUG, districtCell, scanX, type V3 } from "./board.ts";
+import { BLOCKS, SWEEP_1, SWEEP_2, TUG, districtCell, sweepX, type V3 } from "./board.ts";
 
 type Key = { t: number; pos: V3; look: V3; cut?: boolean };
 
@@ -9,8 +9,8 @@ type Key = { t: number; pos: V3; look: V3; cut?: boolean };
 const [ox, oz] = BLOCKS[TUG].stages[0];
 const [fx, fz] = districtCell(0, BLOCKS[TUG].k);
 const near = (x: number, z: number, d: V3, l: V3) => ({ pos: [x + d[0], d[1], z + d[2]] as V3, look: [x + l[0], l[1], z + l[2]] as V3 });
-const [bx, bz] = FEATURES[0].district;
-const [gx, gz] = FEATURES[1].district;
+const scanX = (s: number) => sweepX(SWEEP_1, s);
+const deepX = (s: number) => sweepX(SWEEP_2, s);
 
 const KEYS: Key[] = [
   // 1 · the tug: close on one block, then pull back as the feature tears loose
@@ -28,30 +28,30 @@ const KEYS: Key[] = [
   { t: 14.0, pos: [scanX(14.0) - 3.2, 3.4, 9.6], look: [scanX(14.0) + 1.5, 0.9, 0] },
   { t: 15.6, pos: [scanX(15.6) - 2.5, 4.2, 10.5], look: [scanX(15.6), 0.9, 0] },
   { t: 17.9, pos: [2, 15, 16], look: [0, 0.6, 0] },
-  // 4 · redesign: lift to the hanging lists and orbit them
-  { t: 20.0, pos: [0, 12.5, 18], look: [0, 3.6, 0] },
-  { t: 23.0, pos: [-8, 12, 15.5], look: [0, 3.4, 0] },
-  { t: 25.9, pos: [-6, 9, 13], look: [bx, 1.2, bz] },
-  // 5 · land each fix: swoop district to district
-  { t: 27.2, pos: [bx + 3.5, 5.5, bz + 7.5], look: [bx, 0.8, bz] },
-  { t: 29.4, pos: [bx - 3, 6.5, bz + 7.5], look: [bx, 0.8, bz] },
-  { t: 31.0, pos: [gx + 3, 6, gz + 7.5], look: [gx, 0.8, gz] },
-  { t: 32.6, pos: [gx - 2, 7.5, gz + 8.5], look: [gx, 0.6, gz] },
-  { t: 34.2, pos: [2, 11, 10], look: [0, 0.2, -1] },
-  { t: 36.4, pos: [-4, 13, 8], look: [0, 0.2, -3] },
-  { t: 38.3, pos: [3, 19, 15], look: [0, 0, 0] },
-  { t: 40.0, pos: [-5, 15, 15], look: [0, 0, 0.5] },
-  // 6 · search: low and dark among the inspectors
-  { t: 41.8, pos: [-6, 8.5, 13], look: [0, 0.6, 1.5] },
-  { t: 44.0, pos: [6, 9.5, 13.5], look: [0, 0.6, 1] },
+  // 4 · layer 1 cleared: orbit while each kind of slop goes, bar by bar
+  { t: 19.5, pos: [-7, 12, 14], look: [0, 0.6, 0.5] },
+  { t: 21.5, pos: [-2, 9.5, 12.5], look: [0, 0.6, 0] },
+  { t: 23.9, pos: [7, 10, 12], look: [0, 0.6, 0] },
+  // 5 · layer 2: low behind the red beam as it sweeps back under the floor
+  { t: 24.0, pos: [deepX(24.0) + 3.2, 3.0, 9.6], look: [deepX(24.0) - 1.5, 0.4, 0], cut: true },
+  { t: 25.0, pos: [deepX(25.0) + 3.2, 3.1, 9.6], look: [deepX(25.0) - 1.5, 0.4, 0] },
+  { t: 25.9, pos: [-4.5, 4.4, 11], look: [-3.5, 0.6, 0] },
+  // 6 · the gathers: rise over the board as each pair of features lands
+  { t: 27.0, pos: [-3, 13, 15], look: [0, 0.4, 0.5] },
+  { t: 29.0, pos: [5, 14, 13], look: [0, 0.3, -0.5] },
+  { t: 31.9, pos: [9, 15, 12], look: [0, 0.3, 0] },
   // 7 · the tug again, matched to the opening
-  { t: 44.0, ...near(fx, fz, [3.4, 3.0, 7.6], [-0.4, 1.0, -0.5]), cut: true },
-  { t: 45.8, ...near(fx, fz, [3.5, 4.5, 10], [-0.5, 2.4, -0.5]) },
-  { t: 48.0, pos: [5, 13, 17], look: [-1, 0.8, 0] },
-  { t: 50.0, pos: [-3, 17, 16], look: [0, 0.5, 0] },
-  // 8 · lockup: straight above
-  { t: 50.0, pos: [2, 30, 4], look: [0, 0, 0], cut: true },
-  { t: 54.5, pos: [-3, 23, 6], look: [0, 0, 0] },
+  { t: 32.0, ...near(fx, fz, [3.4, 3.0, 7.6], [-0.4, 1.0, -0.5]), cut: true },
+  { t: 33.8, ...near(fx, fz, [3.5, 4.5, 10], [-0.5, 2.4, -0.5]) },
+  { t: 36.0, pos: [3, 15, 17], look: [0, 0.6, 0.5] },
+  // 8 · every week: slow orbit high over the clean board
+  { t: 40.0, pos: [-10, 14, 12], look: [0, 0.4, 0] },
+  { t: 44.0, pos: [-3, 16, 15], look: [0, 0.4, 0.5] },
+  // 9 · the claim
+  { t: 48.0, pos: [6, 13, 16], look: [0, 0.5, 0] },
+  // 10 · lockup: straight above
+  { t: 48.0, pos: [2, 30, 4], look: [0, 0, 0], cut: true },
+  { t: 52.5, pos: [-3, 23, 6], look: [0, 0, 0] },
 ];
 
 const cr = (p0: number, p1: number, p2: number, p3: number, u: number) =>
