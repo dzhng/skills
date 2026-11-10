@@ -1,6 +1,6 @@
 ---
 name: refactor-codebase
-description: Untangle a whole codebase in one run, so a typical change lands in one place.
+description: Refactor a whole codebase in one run, tuned to clear the layered debt AI-written code piles up, so a typical change lands in one place. Worth running regularly.
 disable-model-invocation: true
 ---
 
