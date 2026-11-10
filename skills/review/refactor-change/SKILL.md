@@ -1,5 +1,5 @@
 ---
-name: refactor-clean
+name: refactor-change
 description: Refactor cleanly instead of layering sediment. Use for rename requests, stale or misleading names, legacy leftovers, changed scope, or when a change reveals duplicated concepts, local adapters, obsolete owners, redundant inputs or guards, compatibility wrappers, parallel abstractions, an over-large module that has accreted many responsibilities, or "just tack this on" pressure in any code area.
 ---
 

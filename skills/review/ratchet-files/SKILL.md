@@ -26,7 +26,7 @@ with `--help` before anything else.
    with no blocker, the largest ones a change is about to touch.
 3. Split each one by the rules the script prints. A seam is a concept the
    file already owns, not a line count; when
-   [refactor-clean](../refactor-clean/SKILL.md) is installed, use it to find
+   [refactor-change](../refactor-change/SKILL.md) is installed, use it to find
    them.
 4. Prove the split changed no behaviour with the repository's own checks,
    and commit it alone, before the change that needed the room.

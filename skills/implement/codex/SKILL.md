@@ -32,7 +32,7 @@ raising `--effort`.
 - **One task per run.** Split unrelated asks (review, then fix, then docs) into
   separate runs; a mixed prompt gets a mixed result.
 - **Name skills instead of restating them.** Codex reads the same skills your
-  repo carries — say "follow write-docs for the doc", "obey refactor-clean: no
+  repo carries — say "follow write-docs for the doc", "obey refactor-change: no
   compatibility wrappers." Don't re-explain what a skill already carries.
 - **Blocks, added only where the task needs them:**
   - `<task>` — the concrete job, the repo/failure context, the expected end

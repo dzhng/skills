@@ -39,7 +39,7 @@ the artifact you need. A sharper contract beats higher effort.
 - **One task per run.** Split review, implementation, and docs into separate
   prompts.
 - **Name repo skills when relevant.** Claude can read repo files; say "follow
-  write-docs for the doc" or "obey refactor-clean: no compatibility wrappers"
+  write-docs for the doc" or "obey refactor-change: no compatibility wrappers"
   instead of pasting those skills into the prompt.
 - **Blocks, added only where useful:**
   - `<task>` — the concrete job, context, and expected end state.

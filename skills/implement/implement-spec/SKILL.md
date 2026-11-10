@@ -59,16 +59,16 @@ depends on prior work.
 
    Sizing the pass — measuring what it cost and reworking it when the line count
    is out of proportion to the behaviour it delivers — belongs to the shape pass
-   in step 6, under [refactor-clean](../refactor-clean/SKILL.md).
-6. Run [review](../review/SKILL.md) at the end of every pass, before committing.
-   It sequences the three closeout lenses — refactor-clean on the shape,
+   in step 6, under [refactor-change](../../review/refactor-change/SKILL.md).
+6. Run [review](../../review/review/SKILL.md) at the end of every pass, before committing.
+   It sequences the three closeout lenses — refactor-change on the shape,
    code-review on the settled diff, write-docs on what the change touched — and
    you apply the fixes from all three. Long specs are where sediment compounds,
    so hold the shape pass to this pass's own output: dev-only shims, duplicated
    concepts, parallel abstractions, and compatibility wrappers it introduced
    collapse into the clean contract with one owner, so the code reads as designed
    today, not tacked on. Last, run
-   [audit-decisions](../audit-decisions/SKILL.md) on the cleaned pass — a pure
+   [audit-decisions](../../review/audit-decisions/SKILL.md) on the cleaned pass — a pure
    audit that appends every decision made where the spec was silent (your own,
    and each delegated subagent's when integrating) to the spec's decisions
    ledger (`specs/<feature>/decisions.md`) with verdicts, changing no code
@@ -108,7 +108,7 @@ depends on prior work.
 9. **Continue.** If any slice or global TODO is still open, go straight back to
    step 1 for the next one — same session, no pause for acknowledgement. Keep
    looping until every TODO is closed.
-10. **Run [review](../review/SKILL.md) once more over the whole spec.** The
+10. **Run [review](../../review/review/SKILL.md) once more over the whole spec.** The
    per-pass reviews each judged one slice against the code as it stood then; this
    one judges the finished feature. Scope it to the spec's full diff, not the last
    pass — that is the only scope where duplication spread across slices, a shape
@@ -127,7 +127,7 @@ depends on prior work.
    end state, drop anything a later pass superseded or reverted, and merge
    duplicates. Keep it **decisions only** — no gate results, e2e evidence, or
    review-finding narration; those are reported elsewhere and are not decisions the
-   user now owns. Present it per [audit-decisions](../audit-decisions/SKILL.md): grouped
+   user now owns. Present it per [audit-decisions](../../review/audit-decisions/SKILL.md): grouped
    by verdict, ranked least-confident-first, every entry ELI5 and standalone.
    *Then* close the spec with [close-spec](../close-spec/SKILL.md).
 
@@ -212,7 +212,7 @@ been archived with [close-spec](../close-spec/SKILL.md).
 Anything short of that is mid-implementation: keep going.
 
 The final handback presents the decisions ledger, not the diff, per
-[audit-decisions](../audit-decisions/SKILL.md) — a days-long unsupervised run
+[audit-decisions](../../review/audit-decisions/SKILL.md) — a days-long unsupervised run
 earns its merge through this ledger; it is the user's review surface for
 everything decided without them. Hand over the **consolidated** ledger from
 step 11 (final state, verified against shipped code, decisions only), never the

@@ -59,7 +59,7 @@ Use what the repo already chose before writing your own. Find the existing owner
 
 Prefer one general rule to a special case, and a simple structure to an abstraction nobody needs yet.
 
-Spend margin on simplicity. When something has room to spare against its budget (frame time, startup, memory, bandwidth), use that room to keep the design simple. Don't add machinery to make a thing faster than it needs to be, and take such machinery out when the margin shows it wasn't needed. When something replaces an old mechanism, delete the old one. When a change exposes a duplicate or a stale owner, invoke <skill: refactor-clean>.
+Spend margin on simplicity. When something has room to spare against its budget (frame time, startup, memory, bandwidth), use that room to keep the design simple. Don't add machinery to make a thing faster than it needs to be, and take such machinery out when the margin shows it wasn't needed. When something replaces an old mechanism, delete the old one. When a change exposes a duplicate or a stale owner, invoke <skill: refactor-change>.
 
 ## Parallel work stays cheap
 

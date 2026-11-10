@@ -10,7 +10,7 @@ The result is a map of contracts to their surviving tests, with evidence for
 what to keep, repair, combine, or remove. Fewer tests is not the objective;
 less maintenance for the same or better confidence is.
 
-[write-tests](../write-tests/SKILL.md) owns how to write and falsify a test.
+[write-tests](../../implement/write-tests/SKILL.md) owns how to write and falsify a test.
 This skill owns whether that test adds proof and where that proof belongs.
 [review](../review/SKILL.md) owns closing out the resulting changes.
 
@@ -39,7 +39,7 @@ This skill owns whether that test adds proof and where that proof belongs.
    Another layer earns coverage only for a failure the chosen owner cannot
    expose, such as routing or lifecycle behavior.
 5. **Change one coherent boundary.** When implementation is in scope, carry
-   unique cases into the surviving suite using [write-tests](../write-tests/SKILL.md)
+   unique cases into the surviving suite using [write-tests](../../implement/write-tests/SKILL.md)
    before removing their old home. Extend existing cases and fixtures instead
    of cloning setup. Remove newly unneeded test hooks and support code in the
    same batch; verify production consumers before deleting an export, wrapper,
@@ -48,7 +48,7 @@ This skill owns whether that test adds proof and where that proof belongs.
 6. **Prove preservation.** Compare the removed assertions with the survivors,
    looking for lost contracts and assertions that cannot fail for the intended
    reason. Falsify repaired or transferred regression coverage using
-   [write-tests](../write-tests/SKILL.md). Isolate temporary production changes,
+   [write-tests](../../implement/write-tests/SKILL.md). Isolate temporary production changes,
    restore the original bytes without disturbing other work, and confirm the
    targeted proof passes. Report baseline failures separately; investigate any
    new failures. Run owner and sibling suites, then required repository checks.
