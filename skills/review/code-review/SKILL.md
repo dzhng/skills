@@ -73,8 +73,7 @@ Review the diff or specified files against these principles.
 
 - If a module only forwards another package's functions or types, delete it and import the original package directly.
 - Do not preserve local compatibility shims for scaffold code or unshipped branch work. Replace the scaffold outright.
-- Re-export barrels are not useful unless they define a real public boundary with project-specific semantics. Avoid creating files whose only job is `export * from ...`.
-- Where the runtime evaluates the module graph on every call or cold start, import the module that defines a name, not a barrel that loads everything behind it.
+- No barrel files: never write an `index.ts` that only re-exports other modules. Import from the module that defines the name.
 - Prefer using the upstream API name directly over inventing local aliases like `discoverAll()` for `loadSkills()`.
 
 ## 11. Extract only around real ownership boundaries
