@@ -172,6 +172,7 @@ when the research is ready for implementation.
 | [find-overengineering](skills/review/find-overengineering/SKILL.md) | Roll back protective code for an edge case of an edge case, and migrations for products with no users. |
 | [ratchet-files](skills/review/ratchet-files/SKILL.md) | Keep every source file small enough for an agent to read whole: list files over a token budget, split them by concept, and install a pre-commit ratchet that lets oversized files shrink but never grow. Ships the check and a shared hook installer that covers every worktree. |
 | [retro](skills/review/retro/SKILL.md) | Conduct a coding-session retrospective and suggest improvements to the agent's environment, checks, guidance, and information access. User-invoked. |
+| [agent-qa](skills/engineering/agent-qa/SKILL.md) | Run selected app regressions and review evidence with advanced memidex memory and self-improvement. |
 
 ### Visual review — never accept visuals on vibes
 
