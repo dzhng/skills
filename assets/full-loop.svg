@@ -83,12 +83,12 @@
   <rect x="682" y="366" width="82" height="28" rx="14" fill="#232f63"/>
   <text x="723" y="384.5" font-size="12.5" font-weight="600" fill="#c6d1f2" text-anchor="middle">slice</text>
   <line x1="770" y1="380" x2="784" y2="380" stroke="#7f8ec4" stroke-width="1.6" marker-end="url(#arrowWhite)"/>
-  <rect x="790" y="366" width="86" height="28" rx="14" fill="#232f63"/>
-  <text x="833" y="384.5" font-size="12.5" font-weight="600" fill="#c6d1f2" text-anchor="middle" font-family="'SF Mono',Menlo,monospace">/review</text>
-  <line x1="882" y1="380" x2="896" y2="380" stroke="#7f8ec4" stroke-width="1.6" marker-end="url(#arrowWhite)"/>
-  <rect x="902" y="366" width="104" height="28" rx="14" fill="#232f63"/>
-  <text x="954" y="384.5" font-size="12.5" font-weight="600" fill="#c6d1f2" text-anchor="middle" font-family="'SF Mono',Menlo,monospace">choices.md</text>
-  <path d="M954 396 L954 406 Q954 412 946 412 L731 412 Q723 412 723 406 L723 398" fill="none" stroke="#6b7ab8" stroke-width="1.6" stroke-dasharray="5 5" marker-end="url(#arrowWhite)"/>
+  <rect x="790" y="366" width="78" height="28" rx="14" fill="#232f63"/>
+  <text x="829" y="384.5" font-size="12.5" font-weight="600" fill="#c6d1f2" text-anchor="middle" font-family="'SF Mono',Menlo,monospace">/review</text>
+  <line x1="874" y1="380" x2="888" y2="380" stroke="#7f8ec4" stroke-width="1.6" marker-end="url(#arrowWhite)"/>
+  <rect x="894" y="366" width="112" height="28" rx="14" fill="#232f63"/>
+  <text x="950" y="384.5" font-size="12.5" font-weight="600" fill="#c6d1f2" text-anchor="middle" font-family="'SF Mono',Menlo,monospace">decisions.md</text>
+  <path d="M950 396 L950 406 Q950 412 942 412 L731 412 Q723 412 723 406 L723 398" fill="none" stroke="#6b7ab8" stroke-width="1.6" stroke-dasharray="5 5" marker-end="url(#arrowWhite)"/>
 
   <!-- CARD 4 -->
   <g filter="url(#shadow)">
@@ -97,8 +97,8 @@
   <rect x="1044" y="150" width="300" height="5" rx="2.5" fill="#2f9e6e"/>
   <circle cx="1076" cy="192" r="14" fill="#e8f7f0"/>
   <text x="1076" y="197" font-size="14" font-weight="700" fill="#22815a" text-anchor="middle">4</text>
-  <text x="1100" y="197" font-size="15" font-weight="600" fill="#22815a" font-family="'SF Mono',Menlo,monospace">choices.md</text>
-  <text x="1076" y="242" font-size="21" font-weight="700" fill="#0f1839">Review the choices</text>
+  <text x="1100" y="197" font-size="15" font-weight="600" fill="#22815a" font-family="'SF Mono',Menlo,monospace">decisions.md</text>
+  <text x="1076" y="242" font-size="21" font-weight="700" fill="#0f1839">Review the decisions</text>
   <text x="1076" y="274" font-size="15" fill="#5b6684">Not the diff. Every decision</text>
   <text x="1076" y="298" font-size="15" fill="#5b6684">made where the spec was</text>
   <text x="1076" y="322" font-size="15" fill="#5b6684">silent, ranked least-confident</text>
@@ -121,5 +121,5 @@
   <text x="836" y="558" font-size="15" font-weight="700" fill="#0f1839" text-anchor="middle">hours → 2–3 days</text>
   <text x="836" y="580" font-size="13.5" fill="#5b6684" text-anchor="middle">unattended · you walk away</text>
   <text x="1194" y="558" font-size="15" font-weight="700" fill="#0f1839" text-anchor="middle">30 min – 3 hrs</text>
-  <text x="1194" y="580" font-size="13.5" fill="#5b6684" text-anchor="middle">attended · reviewing choices</text>
+  <text x="1194" y="580" font-size="13.5" fill="#5b6684" text-anchor="middle">attended · reviewing decisions</text>
 </svg>

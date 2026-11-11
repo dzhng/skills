@@ -20,7 +20,10 @@ piece could be re-skinned for any other project, it has failed.
 2. **Direct before you build.** Choose one visual concept grown from what the
    project *is* (its metaphors, its brand art, its mechanism): a world with its
    own look, camera, and signature move, rather than a sequence of panels.
-   Then commit to one familiar real-world analogy for the mechanism (building
+   Build it in 2D (a flat world under a moving camera, with depth from
+   parallax, scale and light): flat pictures explain a mechanism more
+   clearly. Go 3D only when the user asks for it or the subject is itself
+   three-dimensional, like a game world or a physical product. Then commit to one familiar real-world analogy for the mechanism (building
    a city, running a kitchen, a heist) and map every step onto it: name each
    step in the analogy's vocabulary, and give each one the everyday props that
    explain it at a glance (a surveyor's tripod, stakes, cranes, an inspection

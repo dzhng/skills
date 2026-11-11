@@ -14,7 +14,11 @@ writing it.
   render size, submitted geometry, shadow casters, and per-frame lists are
   bounded by what the view can see or cast into, and screen-space work by
   pixels. Store the world map-wide; select from it spatially. Frustum clipping
-  does not make vertices free.
+  does not make vertices free. Compare equal local content and finite view
+  distance: admitting more world changes the workload.
+- **Detail follows projected size.** Correct culling can still admit thousands
+  of tiny meshes. Bound each visible instance’s geometry by its screen footprint
+  as well as bounding the selected population.
 - **One owner per contract.** Frame orchestration, camera, depth convention,
   targets, culling, lighting, timing, and resource lifetime each have one
   owner every pass shares. Extend it; a second copy drifts.

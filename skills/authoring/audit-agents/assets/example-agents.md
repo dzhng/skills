@@ -26,7 +26,7 @@ Every expensive run must answer a question a cheaper one can't. <Name this produ
 
 Default to end-to-end or system-level tests for regression coverage; use a unit test only for specific, complex business logic when fast feedback will materially speed development.
 
-Write the test first. Before changing behaviour or fixing a bug, invoke <skill: write-tests> and follow its red/green workflow. Test what the product does and how it fails, not how the code is shaped.
+Write the test first. Before changing behaviour or fixing a bug, invoke <skill: write-tests> and follow its red/green workflow. Test what the product does and how it fails. Never test presentation as a string: a class name is no more logic than a marketing headline.
 
 A change that shouldn't alter behaviour (a refactor, a performance change) must leave the output unchanged, or be a named decision.
 
@@ -59,7 +59,7 @@ Use what the repo already chose before writing your own. Find the existing owner
 
 Prefer one general rule to a special case, and a simple structure to an abstraction nobody needs yet.
 
-Spend margin on simplicity. When something has room to spare against its budget (frame time, startup, memory, bandwidth), use that room to keep the design simple. Don't add machinery to make a thing faster than it needs to be, and take such machinery out when the margin shows it wasn't needed. When something replaces an old mechanism, delete the old one. When a change exposes a duplicate or a stale owner, invoke <skill: refactor-clean>.
+Spend margin on simplicity. When something has room to spare against its budget (frame time, startup, memory, bandwidth), use that room to keep the design simple. Don't add machinery to make a thing faster than it needs to be, and take such machinery out when the margin shows it wasn't needed. When something replaces an old mechanism, delete the old one. When a change exposes a duplicate or a stale owner, invoke <skill: refactor-change>.
 
 ## Parallel work stays cheap
 

@@ -1,0 +1,24 @@
+{
+  "name": "refactor-codebase-launch-video",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "audio": "node audio/synth.ts && node audio/master.ts",
+    "studio": "remotion studio src/index.ts",
+    "still": "remotion still src/index.ts",
+    "draft": "remotion render src/index.ts LaunchVideo out/draft.mp4 --scale=0.5 --crf=24",
+    "render": "remotion render src/index.ts LaunchVideo out/refactor-codebase-launch.mp4 --codec=h264 --crf=16 --audio-bitrate=320k --pixel-format=yuv420p"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.529",
+    "@remotion/google-fonts": "^4.0.529",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "remotion": "^4.0.529"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "@types/react": "^19.3.0",
+    "typescript": "^7.0.2"
+  }
+}

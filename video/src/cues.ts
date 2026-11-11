@@ -24,7 +24,7 @@ export const SECTIONS = {
 
 export const SKILLS = [
   "explore-unknowns", "write-spec", "implement-spec", "implement-spec-with-codex",
-  "close-spec", "auto-research", "refactor-clean", "write-tests",
+  "close-spec", "auto-research", "refactor-change", "write-tests",
   "audit-performance", "write-docs", "code-review", "audit-choices",
   "eli5", "review", "codex", "claude",
   "marketing-pages", "compare-screenshots", "screenshot-critique", "preview-shots",

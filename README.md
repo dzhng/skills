@@ -61,7 +61,7 @@ works, or individual skills as needed. Every skill stands alone.
 
 ### The full loop — a big feature, start to finish
 
-![The full loop — explore, spec, build unattended, review the choices](assets/full-loop.png)
+![The full loop — explore, spec, build unattended, review the decisions](assets/full-loop.png)
 
 1. **Map the fog.** `/explore-unknowns` on the idea. It interviews you quadrant
    by quadrant and hands you rendered options, mocks, and decision tables to
@@ -84,11 +84,11 @@ works, or individual skills as needed. Every skill stands alone.
    the xyz branch`, or `using /codex as the implementer while you stay the
    parent orchestrator and reviewer`.
 
-4. **Review the choices, not the diff.** The run ends by consolidating
-   `specs/<feature>/choices.md` — every decision the agent made where the spec
+4. **Review the decisions, not the diff.** The run ends by consolidating
+   `specs/<feature>/decisions.md` — every decision the agent made where the spec
    was silent, ranked least-confident first. That's the review surface. Send
    changes back and the next pass re-audits: every time the AI writes code, you
-   audit what it chose.
+   audit what it decided.
 
    The rest fires on its own: a `/review` pass at the end of every slice,
    `/screenshot-critique` and `/compare-screenshots` on anything visual,
@@ -101,7 +101,7 @@ is in the bookends; the middle is unattended.
 
 ### Research — learn through fast experiments
 
-Use [Auto Research](skills/engineering/auto-research/SKILL.md) when the next
+Use [Auto Research](skills/plan/auto-research/SKILL.md) when the next
 decision needs experimental evidence. It starts with one fast, revealing task,
 tests a short batch of hypotheses, checks combinations, and expands coverage as
 the approach improves. New failures become the focus; earlier tasks become
@@ -126,39 +126,53 @@ when the research is ready for implementation.
   neither of you thought of, then pick the loop up at step 2.
 
 - **Any code change that didn't come from a spec.** An ad hoc fix that touched
-  more than expected: `/review` first (refactor-clean → code-review →
-  write-docs), then `/audit-choices`. When the diff is too big to read, the
-  choices ledger is how you still understand what is now in your codebase.
+  more than expected: `/review` first (refactor-change → code-review →
+  write-docs), then `/audit-decisions`. When the diff is too big to read, the
+  decisions ledger is how you still understand what is now in your codebase.
 
 ## Skills
 
-### Engineering — slice, build, verify, repeat
+### Plan — map the fog, then slice it
 
 | Skill | What it does |
 |---|---|
-| [explore-unknowns](skills/engineering/explore-unknowns/SKILL.md) | Walk the user through mapping a task's unknowns quadrant by quadrant — known knowns first, then interviews, reactable artifacts, and blindspot passes — ending with a complete four-quadrant map. |
-| [auto-research](skills/engineering/auto-research/SKILL.md) | Optimize through fast, progressive experiments, producing a verified candidate and a map of parameter effects and tradeoffs. |
-| [write-spec](skills/engineering/write-spec/SKILL.md) | Break a large feature into independently verifiable, human-reviewable slices with API seams and playable checkpoints. |
-| [implement-spec](skills/engineering/implement-spec/SKILL.md) | Build an existing spec to completion, one reviewable pass at a time, delegating independent slices in parallel. |
-| [implement-spec-with-goal](skills/engineering/implement-spec-with-goal/SKILL.md) | Use the harness's goal feature, then follow implement-spec to completion. |
-| [implement-spec-with-codex](skills/engineering/implement-spec-with-codex/SKILL.md) | Run implement-spec with Codex writing the code — you orchestrate, integrate, and review every pass. |
-| [close-spec](skills/engineering/close-spec/SKILL.md) | Archive a shipped spec and rewrite it from a build plan into a durable rationale record that points back at the code. |
-| [handoff-spec](skills/engineering/handoff-spec/SKILL.md) | Hand a spec that is mid-implementation to another machine or agent: capture what the session knows in the spec, then push. User-invoked. |
-| [refactor-clean](skills/engineering/refactor-clean/SKILL.md) | Refactor by moving ownership to one clean concept instead of layering compatibility sediment beside the problem. |
-| [write-tests](skills/engineering/write-tests/SKILL.md) | Write tests one tracer bullet at a time that pin real behavior — not implementation details, config values, or lucky samples. |
-| [audit-tests](skills/engineering/audit-tests/SKILL.md) | Map contracts to independent test proof, consolidate redundant coverage, and remove test-only machinery without losing regression protection. |
+| [explore-unknowns](skills/plan/explore-unknowns/SKILL.md) | Walk the user through mapping a task's unknowns quadrant by quadrant — known knowns first, then interviews, reactable artifacts, and blindspot passes — ending with a complete four-quadrant map. |
+| [auto-research](skills/plan/auto-research/SKILL.md) | Optimize through fast, progressive experiments, producing a verified candidate and a map of parameter effects and tradeoffs. |
+| [write-spec](skills/plan/write-spec/SKILL.md) | Break a large feature into independently verifiable, human-reviewable slices with API seams and playable checkpoints. |
+
+### Implement — build every slice to completion
+
+| Skill | What it does |
+|---|---|
+| [implement-spec](skills/implement/implement-spec/SKILL.md) | Build an existing spec to completion, one reviewable pass at a time, delegating independent slices in parallel. |
+| [implement-spec-with-goal](skills/implement/implement-spec-with-goal/SKILL.md) | Use the harness's goal feature, then follow implement-spec to completion. |
+| [implement-spec-with-codex](skills/implement/implement-spec-with-codex/SKILL.md) | Run implement-spec with Codex writing the code — you orchestrate, integrate, and review every pass. |
+| [handoff-spec](skills/implement/handoff-spec/SKILL.md) | Hand a spec that is mid-implementation to another machine or agent: capture what the session knows in the spec, then push. User-invoked. |
+| [close-spec](skills/implement/close-spec/SKILL.md) | Archive a shipped spec and rewrite it from a build plan into a durable rationale record that points back at the code. |
+| [port-features](skills/implement/port-features/SKILL.md) | Port a feature by copying its exact upstream code and editing the copy instead of rewriting it, with git history explaining each odd line before it changes. |
+| [write-tests](skills/implement/write-tests/SKILL.md) | Write tests one tracer bullet at a time that pin real behavior — not implementation details, config values, or lucky samples. |
+| [write-docs](skills/implement/write-docs/SKILL.md) | Write docs as a glossary of principles and pointers, never a mirror of the code that will rot. |
+| [codex](skills/implement/codex/SKILL.md) | Use the local Codex CLI as an independent second agent for review and (on explicit ask) delegated implementation. |
+| [claude](skills/implement/claude/SKILL.md) | Use Claude Code (`claude -p`) as an independent second agent for consultation and (on explicit ask) delegated implementation. |
+| [marketing-pages](skills/implement/marketing-pages/SKILL.md) | Rulebook for writing, updating, and auditing marketing pages by page class — campaign landers stay noindexed and unlinked with one CTA; everything else earns its sitemap entry, crawl-rail link, and canonical copy source. |
+
+### Review — every piece proves itself before the loop moves on
+
+| Skill | What it does |
+|---|---|
+| [review](skills/review/review/SKILL.md) | Closeout a finished change as one pass — refactor-change, then code-review, then write-docs — sequenced into a single verdict. |
+| [code-review](skills/review/code-review/SKILL.md) | Audit a diff for stale names, dead references, needless complexity, and comments that narrate instead of explain — ending on a clean/not-clean verdict. |
+| [audit-decisions](skills/review/audit-decisions/SKILL.md) | Audit the decisions an implementer made, not its diff — a pure, never-blocking audit whose ledger discloses the architecture settled on the user's behalf, reviewed instead of the code. |
+| [eli5](skills/review/eli5/SKILL.md) | Explain a spec or change in plain language without losing precision — the ELI5 register other skills borrow for standalone, walked-scenario explanations. |
+| [audit-tests](skills/review/audit-tests/SKILL.md) | Map contracts to independent test proof, consolidate redundant coverage, and remove test-only machinery without losing regression protection. |
+| [audit-performance](skills/review/audit-performance/SKILL.md) | Find hot paths that amplify or repeat without progress, rank them by real failure risk, and prefer the smallest bounded fix that preserves healing. |
+| [refactor-change](skills/review/refactor-change/SKILL.md) | Refactor by moving ownership to one clean concept instead of layering compatibility sediment beside the problem. |
+| [refactor-codebase](skills/review/refactor-codebase/SKILL.md) | Refactor a whole codebase as one goal run, tuned for the layered debt AI-written code piles up: list every hidden link, needless link, surplus piece, and special case (with find-state-machines, find-overengineering, and ratchet-files hunting their own kinds), redesign from the list, land each fix through refactor-change and code-review, then audit the tests. User-invoked. |
+| [find-state-machines](skills/review/find-state-machines/SKILL.md) | Find implicit state machines and make them explicit — small safe fixes proactively, larger restructures after confirming. |
+| [find-overengineering](skills/review/find-overengineering/SKILL.md) | Roll back protective code for an edge case of an edge case, and migrations for products with no users. |
+| [ratchet-files](skills/review/ratchet-files/SKILL.md) | Keep every source file small enough for an agent to read whole: list files over a token budget, split them by concept, and install a pre-commit ratchet that lets oversized files shrink but never grow. Ships the check and a shared hook installer that covers every worktree. |
+| [retro](skills/review/retro/SKILL.md) | Conduct a coding-session retrospective and suggest improvements to the agent's environment, checks, guidance, and information access. User-invoked. |
 | [agent-qa](skills/engineering/agent-qa/SKILL.md) | Run selected app regressions and review evidence with advanced memidex memory and self-improvement. |
-| [audit-performance](skills/engineering/audit-performance/SKILL.md) | Find hot paths that amplify or repeat without progress, rank them by real failure risk, and prefer the smallest bounded fix that preserves healing. |
-| [ratchet-files](skills/engineering/ratchet-files/SKILL.md) | Keep every source file small enough for an agent to read whole: list files over a token budget, split them by concept, and install a pre-commit ratchet that lets oversized files shrink but never grow. |
-| [write-docs](skills/engineering/write-docs/SKILL.md) | Write docs as a glossary of principles and pointers, never a mirror of the code that will rot. |
-| [code-review](skills/engineering/code-review/SKILL.md) | Audit a diff for stale names, dead references, needless complexity, and comments that narrate instead of explain — ending on a clean/not-clean verdict. |
-| [audit-choices](skills/engineering/audit-choices/SKILL.md) | Audit the choices an implementer made, not its diff — a pure, never-blocking audit whose ledger discloses the architecture and decisions made on the user's behalf, reviewed instead of the code. |
-| [retro](skills/engineering/retro/SKILL.md) | Conduct a coding-session retrospective and suggest improvements to the agent's environment, checks, guidance, and information access. User-invoked. |
-| [eli5](skills/engineering/eli5/SKILL.md) | Explain a spec or change in plain language without losing precision — the ELI5 register other skills borrow for standalone, walked-scenario explanations. |
-| [review](skills/engineering/review/SKILL.md) | Closeout a finished change as one pass — refactor-clean, then code-review, then write-docs — sequenced into a single verdict. |
-| [codex](skills/engineering/codex/SKILL.md) | Use the local Codex CLI as an independent second agent for review and (on explicit ask) delegated implementation. |
-| [claude](skills/engineering/claude/SKILL.md) | Use Claude Code (`claude -p`) as an independent second agent for consultation and (on explicit ask) delegated implementation. |
-| [marketing-pages](skills/engineering/marketing-pages/SKILL.md) | Rulebook for writing, updating, and auditing marketing pages by page class — campaign landers stay noindexed and unlinked with one CTA; everything else earns its sitemap entry, crawl-rail link, and canonical copy source. |
 
 ### Visual review — never accept visuals on vibes
 
@@ -182,7 +196,7 @@ when the research is ready for implementation.
 | Skill | What it does |
 |---|---|
 | [renderer](skills/graphics/renderer/SKILL.md) | Architecture rules for GPU rendering with TypeGPU/WebGPU — one frame orchestrator, single owners, a resource registry, depth and compositing contracts, and verification that looks at pixels. |
-| [launch-video](skills/graphics/launch-video/SKILL.md) | Direct a showreel-grade launch video in code — one visual concept grown from the project, picture and a synthesized score locked to one timing source, and a preview frame that survives social feeds. |
+| [launch-video](skills/graphics/launch-video/SKILL.md) | Direct a showreel-grade launch video in code, 2D unless the subject is 3D — one visual concept grown from the project, picture and a synthesized score locked to one timing source, and a preview frame that survives social feeds. |
 | [cinematic-shot](skills/graphics/cinematic-shot/SKILL.md) | Shoot software UI like a film — steep, oblique extreme close-up hero shots with a razor-thin focal plane, slow motivated camera drift, and UI that acts on its own, hard-cut on the action. |
 | [isometric-motion](skills/graphics/isometric-motion/SKILL.md) | Build animations and interactive elements in a crafted isometric style — solid many-part figures, four-tone shading, a framed card with live readout, and calm eased motion driven by one model. |
 | [xiaohei-illustrations](skills/graphics/xiaohei-illustrations/SKILL.md) | Hand-drawn 16:9 editorial illustrations for articles and docs, starring Xiaohei, a small solid-black creature acting out each idea, with sparse handwritten English annotations. |
@@ -204,3 +218,7 @@ Thanks to [wheresryan22](https://github.com/wheresryan22) for the
 Thanks to [helloianneo](https://github.com/helloianneo) for the
 [Ian Xiaohei illustrations skill](https://github.com/helloianneo/ian-xiaohei-illustrations),
 copied here in its English version as `xiaohei-illustrations`.
+Thanks to [Caldo](https://github.com/caldoai) for the
+[untangle-codebase skill](https://github.com/caldoai/skills/tree/main/skills/untangle-codebase),
+trimmed here as `refactor-codebase` so each fix runs through this repo's
+`refactor-change`.
