@@ -2,9 +2,9 @@
 
 [![skills.sh](https://skills.sh/b/dzhng/skills)](https://skills.sh/dzhng/skills)
 
-![AI skills for building software factories](assets/hero.jpg)
+![AI skills for growing software farms](assets/hero.jpg)
 
-**AI skills for building software factories.** My personal library of
+**AI skills for growing software farms.** My personal library of
 domain-agnostic agent skills, reused across every project. Small, composable,
 and hackable — works with any harness that supports skills: Claude Code, Codex,
 opencode, Cursor, [duet](https://duet.so), and
@@ -35,44 +35,53 @@ left alone, and a `.claude/skills` that is already a symlink is left as is. Add
 
 ## Why
 
-Software is moving from tasks to **factories**: agents that pursue a goal
-autonomously until the output can be trusted. The hard part isn't breaking the
-goal into tasks — it's breaking it into **independently verifiable pieces**, and
-knowing where the pieces even are.
+Software is moving from tasks to **farms**: agents that keep growing toward a
+goal on their own, for hours or days, until the harvest can be trusted. A
+factory stamps out exactly what it was built to make. A farm *grows* — and what
+grows is never exactly what you planted. Agents write more code than anyone can
+read, and some of it is weeds: decisions nobody made on purpose, protection for
+edge cases of edge cases, abstractions that sprawled while no one was looking.
 
-These skills run that loop. Treat the unknown as **fog of war**: map the
-terrain, carve it into territories that build and verify in isolation, and
-recursively re-slice whatever hides more map. And re-planning doesn't stop when
-planning ends — the spec is a living document, updated and re-sliced
-mid-implementation whenever the work teaches the agent that the plan is stale.
-Every piece must prove itself — architecture review, code review, and visual
-review against a baseline — before the loop moves on. Each iteration gets *less
-wrong*, until the goal is done.
+So the human's job moves from building to **curation**: choose what to plant,
+then pull the weeds, prune the overgrowth, and keep what's good.
+
+![Your job is curation — sort what grew into weeds, overgrowth, and what to keep](assets/curation.jpg)
+
+These skills run the whole season. **Planting** treats the unknown as fog of
+war: survey the land, lay it out in plots that grow and verify in isolation,
+and re-plot whatever hides more ground. The plan stays alive — the spec is
+re-sliced mid-growth whenever the work proves it stale. **Tending** is
+unattended: every plot proves itself — architecture review, code review, visual
+review against a baseline — before the loop moves on. **Curating** is yours:
+the run hands you a ledger of every decision it made where the spec was silent,
+least-confident first, and a set of hunters finds the overgrowth AI-written code
+piles up. Each season the farm gets *less wrong*.
 
 ![A single autonomous run — 3 days, 18 minutes pursuing one goal](assets/autonomous-run.png)
 
-> Proof: one unattended Codex run pursuing a single goal for **3d 18m** on top
+> Proof: one unattended Codex run growing a single goal for **3d 18m** on top
 > of these skills, slicing and iterating until done.
 
 ## How to use
 
-Use a chained pipeline to build a feature, a research loop to discover what
-works, or individual skills as needed. Every skill stands alone.
+Run a full season to grow a feature, a research loop to discover what works,
+or reach for individual tools as needed. Every skill stands alone.
 
-### The full loop — a big feature, start to finish
+### The full loop — one feature, seed to harvest
 
-![The full loop — explore, spec, build unattended, review the decisions](assets/full-loop.png)
+![The full loop — survey the land, lay out the plots, let it grow unattended, then weed and prune the decisions](assets/full-loop.png)
 
-1. **Map the fog.** `/explore-unknowns` on the idea. It interviews you quadrant
+1. **Survey the land.** `/explore-unknowns` on the idea. It interviews you quadrant
    by quadrant and hands you rendered options, mocks, and decision tables to
-   react to instead of asking you to imagine. By the end you know what the
-   feature does.
+   react to instead of asking you to imagine. By the end you know what to
+   plant.
 
-2. **Codify.** `/write-spec` on that map. Most decisions were already made
-   upstream, so this pass is transcription — I don't read the spec. Anything
+2. **Lay out the plots.** `/write-spec` on that map. Most decisions were already made
+   upstream, so this pass is transcription into plots that grow and verify on their own — I
+   don't read the spec. Anything
    genuinely new it hits, it asks about instead of deciding.
 
-3. **Build.** Kick off the loop:
+3. **Let it grow.** Kick off the loop:
 
    ```
    /goal /implement-spec specs/<feature>
@@ -84,11 +93,12 @@ works, or individual skills as needed. Every skill stands alone.
    the xyz branch`, or `using /codex as the implementer while you stay the
    parent orchestrator and reviewer`.
 
-4. **Review the decisions, not the diff.** The run ends by consolidating
-   `specs/<feature>/decisions.md` — every decision the agent made where the spec
-   was silent, ranked least-confident first. That's the review surface. Send
-   changes back and the next pass re-audits: every time the AI writes code, you
-   audit what it decided.
+4. **Weed and prune — the decisions, not the diff.** The run ends by
+   consolidating `specs/<feature>/decisions.md` — every decision the agent made
+   where the spec was silent, ranked least-confident first. That's the curation
+   surface. Pull the decisions you don't want, cut back what sprawled, and send
+   it back; the next pass regrows and re-audits. Every time the AI writes code,
+   you curate what it decided.
 
    The rest fires on its own: a `/review` pass at the end of every slice,
    `/screenshot-critique` and `/compare-screenshots` on anything visual,
@@ -97,7 +107,7 @@ works, or individual skills as needed. Every skill stands alone.
 
 Budget: 30 minutes to a few hours on steps 1–2, 30 minutes to a few hours on
 step 4. A run that goes two days is more like 2–3 hours on each end. Your time
-is in the bookends; the middle is unattended.
+is in the bookends — planting and curating; the middle grows on its own.
 
 ### Research — learn through fast experiments
 
@@ -130,9 +140,16 @@ when the research is ready for implementation.
   write-docs), then `/audit-decisions`. When the diff is too big to read, the
   decisions ledger is how you still understand what is now in your codebase.
 
+- **A codebase that grew wild.** `/refactor-codebase` is a weeding season for
+  the whole plot: it lists every hidden link, needless link, surplus piece, and
+  special case, then redesigns from the list. For a narrower cut,
+  `/find-overengineering` pulls protection nobody needs, `/audit-tests` prunes
+  tests that don't earn their keep, and `/ratchet-files` keeps any one file
+  from overgrowing.
+
 ## Skills
 
-### Plan — map the fog, then slice it
+### Plan — survey the land, then lay out the plots
 
 | Skill | What it does |
 |---|---|
@@ -140,7 +157,7 @@ when the research is ready for implementation.
 | [auto-research](skills/plan/auto-research/SKILL.md) | Optimize through fast, progressive experiments, producing a verified candidate and a map of parameter effects and tradeoffs. |
 | [write-spec](skills/plan/write-spec/SKILL.md) | Break a large feature into independently verifiable, human-reviewable slices with API seams and playable checkpoints. |
 
-### Implement — build every slice to completion
+### Implement — grow every plot to harvest
 
 | Skill | What it does |
 |---|---|
@@ -156,7 +173,7 @@ when the research is ready for implementation.
 | [claude](skills/implement/claude/SKILL.md) | Use Claude Code (`claude -p`) as an independent second agent for consultation and (on explicit ask) delegated implementation. |
 | [marketing-pages](skills/implement/marketing-pages/SKILL.md) | Rulebook for writing, updating, and auditing marketing pages by page class — campaign landers stay noindexed and unlinked with one CTA; everything else earns its sitemap entry, crawl-rail link, and canonical copy source. |
 
-### Review — every piece proves itself before the loop moves on
+### Review — weed, prune, and keep what's good
 
 | Skill | What it does |
 |---|---|
@@ -182,7 +199,7 @@ when the research is ready for implementation.
 | [screenshot-critique](skills/visual/screenshot-critique/SKILL.md) | Use an unprimed subagent as a second set of eyes on visual work before accepting it; mandatory before declaring a reported visual bug fixed. Ships a checker that strikes any number the critique cannot show a command for, and any file it named but never wrote. |
 | [preview-shots](skills/visual/preview-shots/SKILL.md) | Open a curated set of image shots in one macOS Preview window for the user to eyeball. |
 
-### Authoring — keep the skills themselves sharp
+### Authoring — sharpen the tools themselves
 
 | Skill | What it does |
 |---|---|
